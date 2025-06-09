@@ -6,15 +6,10 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "next lint",
-    "test-astradb": "node scripts/test-astradb.js",
-    "setup-astradb": "node scripts/test-astradb.js",
-    "seed-charities": "node scripts/seed-charities.js"
+    "lint": "next lint"
   },
   "dependencies": {
-    "@astrajs/collections": "^0.3.4",
-    "@astrajs/rest": "^0.3.4",
-    "@datastax/astra-db-ts": "^2.0.1",
+    "@datastax/astra-db-ts": "latest",
     "@emotion/is-prop-valid": "latest",
     "@hookform/resolvers": "^3.9.1",
     "@radix-ui/react-accordion": "1.2.2",
@@ -49,9 +44,8 @@
     "clsx": "^2.1.1",
     "cmdk": "1.0.4",
     "date-fns": "4.1.0",
-    "dotenv": "^16.5.0",
     "embla-carousel-react": "8.5.1",
-    "ethers": "^5.7.2",
+    "ethers": "latest",
     "framer-motion": "latest",
     "input-otp": "1.4.1",
     "lucide-react": "^0.454.0",
@@ -63,11 +57,10 @@
     "react-hook-form": "^7.54.1",
     "react-resizable-panels": "^2.1.7",
     "recharts": "2.15.0",
-    "sonner": "^1.7.1",
+    "sonner": "latest",
     "tailwind-merge": "^2.5.5",
     "tailwindcss-animate": "^1.0.7",
     "vaul": "^0.9.6",
-    "web3modal": "^1.9.12",
     "zod": "^3.24.1"
   },
   "devDependencies": {

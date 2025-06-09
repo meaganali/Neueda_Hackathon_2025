@@ -319,4 +319,4 @@ export const astraService = {
   }
 };
 
-export default astraService; 
+export default astraService;

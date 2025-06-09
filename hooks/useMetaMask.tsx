@@ -173,4 +173,4 @@ export const MetaMaskProvider = ({ children }: { children: React.ReactNode }) =>
   );
 };
 
-export const useMetaMask = () => useContext(MetaMaskContext); 
+export const useMetaMask = () => useContext(MetaMaskContext);

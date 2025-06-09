@@ -29,6 +29,60 @@ const scaleOnHover = {
   whileTap: { scale: 0.95 },
 }
 
+// Floating particles animation
+const FloatingParticles = () => {
+  return (
+    <div className="absolute inset-0 overflow-hidden pointer-events-none">
+      {[...Array(20)].map((_, i) => (
+        <motion.div
+          key={i}
+          className="absolute w-2 h-2 bg-primary/20 rounded-full"
+          initial={{
+            x: Math.random() * window.innerWidth,
+            y: Math.random() * window.innerHeight,
+          }}
+          animate={{
+            x: Math.random() * window.innerWidth,
+            y: Math.random() * window.innerHeight,
+          }}
+          transition={{
+            duration: Math.random() * 10 + 20,
+            repeat: Number.POSITIVE_INFINITY,
+            ease: "linear",
+          }}
+        />
+      ))}
+    </div>
+  )
+}
+
+// Animated grid background
+const AnimatedGrid = () => {
+  return (
+    <div className="absolute inset-0 opacity-10">
+      <svg width="100%" height="100%" xmlns="http://www.w3.org/2000/svg">
+        <defs>
+          <pattern id="grid" width="40" height="40" patternUnits="userSpaceOnUse">
+            <path d="M 40 0 L 0 0 0 40" fill="none" stroke="currentColor" strokeWidth="1" />
+          </pattern>
+        </defs>
+        <rect width="100%" height="100%" fill="url(#grid)" />
+      </svg>
+      <motion.div
+        className="absolute inset-0 bg-gradient-to-r from-primary/5 to-transparent"
+        animate={{
+          x: ["-100%", "100%"],
+        }}
+        transition={{
+          duration: 8,
+          repeat: Number.POSITIVE_INFINITY,
+          ease: "linear",
+        }}
+      />
+    </div>
+  )
+}
+
 export default function Home() {
   return (
     <div className="flex min-h-screen flex-col">
@@ -83,77 +137,82 @@ export default function Home() {
         </div>
       </motion.header>
       <main className="flex-1">
-        <section className="w-full py-12 md:py-24 lg:py-32 xl:py-48 bg-gradient-to-b from-background to-muted">
-          <div className="container px-4 md:px-6">
-            <div className="grid gap-6 lg:grid-cols-[1fr_400px] lg:gap-12 xl:grid-cols-[1fr_600px]">
+        {/* Hero Section with Mission Statement */}
+        <section className="relative w-full py-12 md:py-24 lg:py-32 xl:py-48 bg-gradient-to-br from-background via-primary/5 to-background overflow-hidden">
+          <AnimatedGrid />
+          <FloatingParticles />
+          <div className="container px-4 md:px-6 relative z-10">
+            <div className="flex flex-col items-center justify-center text-center space-y-8">
               <motion.div
-                className="flex flex-col justify-center space-y-4"
-                initial={{ opacity: 0, x: -100 }}
-                animate={{ opacity: 1, x: 0 }}
+                className="space-y-6 max-w-4xl"
+                initial={{ opacity: 0, y: 50 }}
+                animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.8, delay: 0.2 }}
               >
                 <motion.div
-                  className="inline-block rounded-lg bg-primary/10 px-3 py-1 text-sm text-primary w-fit"
+                  className="inline-block rounded-lg bg-primary/10 px-4 py-2 text-sm font-medium text-primary"
                   initial={{ opacity: 0, scale: 0.8 }}
                   animate={{ opacity: 1, scale: 1 }}
                   transition={{ duration: 0.5, delay: 0.4 }}
                 >
-                  Transparent Donations
+                  🚀 Revolutionary Blockchain Transparency
                 </motion.div>
+
                 <motion.h1
-                  className="text-3xl font-bold tracking-tighter sm:text-5xl xl:text-6xl/none"
+                  className="text-4xl font-bold tracking-tighter sm:text-6xl xl:text-7xl/none bg-gradient-to-r from-foreground to-foreground/70 bg-clip-text text-transparent"
                   initial={{ opacity: 0, y: 50 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ duration: 0.8, delay: 0.6 }}
                 >
-                  Know Where Your Impact Is Being Made
+                  Every Dollar. Every Impact.
+                  <br />
+                  <span className="text-primary">Fully Transparent.</span>
                 </motion.h1>
-                <motion.p
-                  className="max-w-[600px] text-muted-foreground md:text-xl"
+
+                <motion.div
+                  className="space-y-4"
                   initial={{ opacity: 0, y: 30 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ duration: 0.8, delay: 0.8 }}
                 >
-                  Trace the Change uses blockchain technology to provide complete transparency in charitable giving.
-                  Track every dollar of your donation and see the real-world impact you're making.
-                </motion.p>
+                  <p className="text-xl md:text-2xl text-muted-foreground font-medium">
+                    Our Mission: Transform charitable giving through blockchain technology
+                  </p>
+                  <p className="text-lg md:text-xl text-muted-foreground max-w-3xl mx-auto">
+                    Track every donation from your wallet to real-world impact. See exactly where your money goes, how
+                    it's used, and the lives it changes - all verified on an immutable blockchain ledger.
+                  </p>
+                </motion.div>
+
                 <motion.div
-                  className="flex flex-col gap-2 min-[400px]:flex-row"
+                  className="flex flex-col gap-4 min-[400px]:flex-row justify-center"
                   initial={{ opacity: 0, y: 30 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ duration: 0.8, delay: 1 }}
                 >
                   <motion.div {...scaleOnHover}>
-                    <Button asChild size="lg">
+                    <Button asChild size="lg" className="text-lg px-8 py-6">
                       <Link href="/charities">
-                        Start Donating
-                        <ArrowRight className="ml-2 h-4 w-4" />
+                        Start Donating Now
+                        <ArrowRight className="ml-2 h-5 w-5" />
                       </Link>
                     </Button>
                   </motion.div>
                   <motion.div {...scaleOnHover}>
-                    <Button asChild variant="outline" size="lg">
-                      <Link href="/how-it-works">Learn More</Link>
+                    <Button asChild variant="outline" size="lg" className="text-lg px-8 py-6">
+                      <Link href="/how-it-works">See How It Works</Link>
                     </Button>
                   </motion.div>
                 </motion.div>
               </motion.div>
-              <motion.img
-                src="/placeholder.svg?height=550&width=800"
-                width={550}
-                height={550}
-                alt="Hero Image"
-                className="mx-auto aspect-video overflow-hidden rounded-xl object-cover sm:w-full lg:order-last"
-                initial={{ opacity: 0, x: 100, rotateY: -15 }}
-                animate={{ opacity: 1, x: 0, rotateY: 0 }}
-                transition={{ duration: 1, delay: 0.4 }}
-                whileHover={{ scale: 1.02, rotateY: 5 }}
-              />
             </div>
           </div>
         </section>
-        <section className="w-full py-12 md:py-24 lg:py-32 bg-background">
-          <div className="container px-4 md:px-6">
+
+        {/* Features Section */}
+        <section className="relative w-full py-12 md:py-24 lg:py-32 bg-background overflow-hidden">
+          <div className="absolute inset-0 bg-gradient-to-r from-primary/5 via-transparent to-primary/5" />
+          <div className="container px-4 md:px-6 relative z-10">
             <motion.div className="flex flex-col items-center justify-center space-y-4 text-center" {...fadeInUp}>
               <div className="space-y-2">
                 <motion.div
@@ -163,7 +222,7 @@ export default function Home() {
                   transition={{ duration: 0.5 }}
                   viewport={{ once: true }}
                 >
-                  Our Mission
+                  Why Choose Trace the Change
                 </motion.div>
                 <motion.h2
                   className="text-3xl font-bold tracking-tighter sm:text-5xl"
@@ -172,7 +231,7 @@ export default function Home() {
                   transition={{ duration: 0.6, delay: 0.2 }}
                   viewport={{ once: true }}
                 >
-                  Transparency in Giving
+                  Transparency in Every Transaction
                 </motion.h2>
                 <motion.p
                   className="max-w-[900px] text-muted-foreground md:text-xl/relaxed lg:text-base/relaxed xl:text-xl/relaxed"
@@ -181,8 +240,8 @@ export default function Home() {
                   transition={{ duration: 0.6, delay: 0.4 }}
                   viewport={{ once: true }}
                 >
-                  We believe that donors deserve to know exactly how their contributions are being used. Our
-                  blockchain-powered platform ensures complete transparency and accountability in charitable giving.
+                  We believe donors deserve complete visibility into how their contributions create real-world impact.
+                  Our blockchain-powered platform ensures every donation is tracked, verified, and accountable.
                 </motion.p>
               </div>
             </motion.div>
@@ -194,47 +253,61 @@ export default function Home() {
               viewport={{ once: true }}
             >
               <motion.div variants={fadeInUp}>
-                <Card className="h-full hover:shadow-lg transition-shadow duration-300">
+                <Card className="h-full hover:shadow-lg transition-all duration-300 border-primary/20 hover:border-primary/40">
                   <CardHeader className="flex flex-row items-center gap-4 pb-2">
-                    <motion.div whileHover={{ rotate: 360, scale: 1.2 }} transition={{ duration: 0.5 }}>
+                    <motion.div
+                      className="p-2 rounded-lg bg-primary/10"
+                      whileHover={{ rotate: 360, scale: 1.2 }}
+                      transition={{ duration: 0.5 }}
+                    >
                       <Shield className="h-8 w-8 text-primary" />
                     </motion.div>
-                    <CardTitle className="text-xl">Secure Tracking</CardTitle>
+                    <CardTitle className="text-xl">Blockchain Security</CardTitle>
                   </CardHeader>
                   <CardContent>
                     <CardDescription className="text-sm text-muted-foreground">
-                      Blockchain technology ensures your donations are securely tracked from your wallet to the final
-                      recipient.
+                      Every donation is cryptographically secured and recorded on an immutable blockchain, ensuring
+                      complete transparency from your wallet to the final recipient.
                     </CardDescription>
                   </CardContent>
                 </Card>
               </motion.div>
               <motion.div variants={fadeInUp}>
-                <Card className="h-full hover:shadow-lg transition-shadow duration-300">
+                <Card className="h-full hover:shadow-lg transition-all duration-300 border-primary/20 hover:border-primary/40">
                   <CardHeader className="flex flex-row items-center gap-4 pb-2">
-                    <motion.div whileHover={{ rotate: 360, scale: 1.2 }} transition={{ duration: 0.5 }}>
+                    <motion.div
+                      className="p-2 rounded-lg bg-primary/10"
+                      whileHover={{ rotate: 360, scale: 1.2 }}
+                      transition={{ duration: 0.5 }}
+                    >
                       <BarChart3 className="h-8 w-8 text-primary" />
                     </motion.div>
                     <CardTitle className="text-xl">Real-time Impact</CardTitle>
                   </CardHeader>
                   <CardContent>
                     <CardDescription className="text-sm text-muted-foreground">
-                      See the real-world impact of your donations with real-time updates and detailed reporting.
+                      Watch your donations create real change with live updates, detailed impact reports, and direct
+                      feedback from the communities you're helping.
                     </CardDescription>
                   </CardContent>
                 </Card>
               </motion.div>
               <motion.div variants={fadeInUp}>
-                <Card className="h-full hover:shadow-lg transition-shadow duration-300">
+                <Card className="h-full hover:shadow-lg transition-all duration-300 border-primary/20 hover:border-primary/40">
                   <CardHeader className="flex flex-row items-center gap-4 pb-2">
-                    <motion.div whileHover={{ rotate: 360, scale: 1.2 }} transition={{ duration: 0.5 }}>
+                    <motion.div
+                      className="p-2 rounded-lg bg-primary/10"
+                      whileHover={{ rotate: 360, scale: 1.2 }}
+                      transition={{ duration: 0.5 }}
+                    >
                       <Globe className="h-8 w-8 text-primary" />
                     </motion.div>
                     <CardTitle className="text-xl">Global Reach</CardTitle>
                   </CardHeader>
                   <CardContent>
                     <CardDescription className="text-sm text-muted-foreground">
-                      Support verified charities and causes around the world with confidence in how your funds are used.
+                      Support verified charities worldwide with confidence, knowing exactly how your funds are
+                      distributed and what impact they're making in communities globally.
                     </CardDescription>
                   </CardContent>
                 </Card>
@@ -242,8 +315,23 @@ export default function Home() {
             </motion.div>
           </div>
         </section>
-        <section className="w-full py-12 md:py-24 lg:py-32 bg-muted">
-          <div className="container px-4 md:px-6">
+
+        {/* Donations Section */}
+        <section className="relative w-full py-12 md:py-24 lg:py-32 bg-muted overflow-hidden">
+          <div className="absolute inset-0">
+            <motion.div
+              className="absolute inset-0 bg-gradient-to-r from-primary/10 to-transparent"
+              animate={{
+                x: ["-100%", "100%"],
+              }}
+              transition={{
+                duration: 15,
+                repeat: Number.POSITIVE_INFINITY,
+                ease: "linear",
+              }}
+            />
+          </div>
+          <div className="container px-4 md:px-6 relative z-10">
             <motion.div
               className="flex flex-col items-center justify-center space-y-4 text-center"
               initial={{ opacity: 0, y: 50 }}
@@ -259,7 +347,7 @@ export default function Home() {
                   transition={{ duration: 0.5, delay: 0.2 }}
                   viewport={{ once: true }}
                 >
-                  Making An Impact
+                  Community Impact
                 </motion.div>
                 <motion.h2
                   className="text-3xl font-bold tracking-tighter sm:text-5xl"
@@ -268,7 +356,7 @@ export default function Home() {
                   transition={{ duration: 0.6, delay: 0.4 }}
                   viewport={{ once: true }}
                 >
-                  Top Donations
+                  Recent Verified Donations
                 </motion.h2>
                 <motion.p
                   className="max-w-[900px] text-muted-foreground md:text-xl/relaxed lg:text-base/relaxed xl:text-xl/relaxed"
@@ -277,7 +365,7 @@ export default function Home() {
                   transition={{ duration: 0.6, delay: 0.6 }}
                   viewport={{ once: true }}
                 >
-                  See how our community is making a difference through transparent giving.
+                  See how our community is making a difference through transparent, blockchain-verified giving.
                 </motion.p>
               </div>
             </motion.div>
@@ -542,8 +630,12 @@ export default function Home() {
             </motion.div>
           </div>
         </section>
-        <section className="w-full py-12 md:py-24 lg:py-32 bg-background border-t">
-          <div className="container px-4 md:px-6">
+
+        {/* CTA Section */}
+        <section className="relative w-full py-12 md:py-24 lg:py-32 bg-background border-t overflow-hidden">
+          <div className="absolute inset-0 bg-gradient-to-r from-primary/5 via-primary/10 to-primary/5" />
+          <FloatingParticles />
+          <div className="container px-4 md:px-6 relative z-10">
             <motion.div
               className="flex flex-col items-center justify-center space-y-4 text-center"
               initial={{ opacity: 0, y: 50 }}
@@ -559,7 +651,7 @@ export default function Home() {
                   transition={{ duration: 0.6, delay: 0.2 }}
                   viewport={{ once: true }}
                 >
-                  Join Our Mission
+                  Ready to Transform Giving?
                 </motion.h2>
                 <motion.p
                   className="max-w-[600px] text-muted-foreground md:text-xl/relaxed lg:text-base/relaxed xl:text-xl/relaxed"
@@ -568,7 +660,8 @@ export default function Home() {
                   transition={{ duration: 0.6, delay: 0.4 }}
                   viewport={{ once: true }}
                 >
-                  Be part of a movement that's transforming charitable giving through transparency and accountability.
+                  Join the movement that's revolutionizing charitable giving through complete transparency and
+                  blockchain accountability.
                 </motion.p>
               </div>
               <motion.div
@@ -580,7 +673,7 @@ export default function Home() {
               >
                 <motion.div {...scaleOnHover}>
                   <Button asChild className="w-full" size="lg">
-                    <Link href="/charities">Get Started Today</Link>
+                    <Link href="/charities">Start Your Impact Today</Link>
                   </Button>
                 </motion.div>
               </motion.div>

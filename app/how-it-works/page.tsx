@@ -27,6 +27,64 @@ const scaleOnHover = {
   whileTap: { scale: 0.95 },
 }
 
+// Animated blockchain visualization
+const BlockchainVisualization = () => {
+  return (
+    <div className="relative w-full h-96 bg-gradient-to-br from-primary/10 to-primary/5 rounded-xl overflow-hidden">
+      <div className="absolute inset-0 flex items-center justify-center">
+        {[...Array(5)].map((_, i) => (
+          <motion.div
+            key={i}
+            className="w-16 h-16 bg-primary/20 border-2 border-primary/40 rounded-lg mx-2 flex items-center justify-center"
+            initial={{ opacity: 0, scale: 0 }}
+            animate={{ opacity: 1, scale: 1 }}
+            transition={{ delay: i * 0.2, duration: 0.5 }}
+            whileHover={{ scale: 1.1, backgroundColor: "rgba(var(--primary), 0.3)" }}
+          >
+            <motion.div
+              className="w-8 h-8 bg-primary rounded"
+              animate={{ rotate: 360 }}
+              transition={{ duration: 2, repeat: Number.POSITIVE_INFINITY, ease: "linear" }}
+            />
+          </motion.div>
+        ))}
+      </div>
+      <motion.div
+        className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-primary to-primary/50"
+        animate={{ x: ["-100%", "100%"] }}
+        transition={{ duration: 3, repeat: Number.POSITIVE_INFINITY, ease: "linear" }}
+      />
+    </div>
+  )
+}
+
+// Floating particles for background
+const FloatingParticles = () => {
+  return (
+    <div className="absolute inset-0 overflow-hidden pointer-events-none">
+      {[...Array(15)].map((_, i) => (
+        <motion.div
+          key={i}
+          className="absolute w-2 h-2 bg-primary/20 rounded-full"
+          initial={{
+            x: Math.random() * (typeof window !== "undefined" ? window.innerWidth : 1000),
+            y: Math.random() * (typeof window !== "undefined" ? window.innerHeight : 1000),
+          }}
+          animate={{
+            x: Math.random() * (typeof window !== "undefined" ? window.innerWidth : 1000),
+            y: Math.random() * (typeof window !== "undefined" ? window.innerHeight : 1000),
+          }}
+          transition={{
+            duration: Math.random() * 10 + 20,
+            repeat: Number.POSITIVE_INFINITY,
+            ease: "linear",
+          }}
+        />
+      ))}
+    </div>
+  )
+}
+
 export default function HowItWorks() {
   return (
     <div className="flex min-h-screen flex-col">
@@ -69,8 +127,9 @@ export default function HowItWorks() {
         </div>
       </motion.header>
       <main className="flex-1">
-        <section className="w-full py-12 md:py-24 lg:py-32 bg-gradient-to-b from-background to-muted">
-          <div className="container px-4 md:px-6">
+        <section className="relative w-full py-12 md:py-24 lg:py-32 bg-gradient-to-br from-background via-primary/5 to-background overflow-hidden">
+          <FloatingParticles />
+          <div className="container px-4 md:px-6 relative z-10">
             <div className="flex flex-col items-center justify-center space-y-4 text-center">
               <div className="space-y-2">
                 <motion.h1
@@ -79,7 +138,7 @@ export default function HowItWorks() {
                   initial="initial"
                   animate="animate"
                 >
-                  How It Works
+                  How Blockchain Transparency Works
                 </motion.h1>
                 <motion.p
                   className="max-w-[900px] text-muted-foreground md:text-xl/relaxed lg:text-base/relaxed xl:text-xl/relaxed"
@@ -87,8 +146,8 @@ export default function HowItWorks() {
                   initial="initial"
                   animate="animate"
                 >
-                  Trace the Change uses blockchain technology to provide complete transparency in charitable giving.
-                  Here's how we track every dollar of your donation.
+                  Trace the Change uses cutting-edge blockchain technology to provide complete transparency in
+                  charitable giving. Here's how we track every dollar of your donation from start to impact.
                 </motion.p>
               </div>
             </div>
@@ -131,8 +190,9 @@ export default function HowItWorks() {
           </div>
         </section>
 
-        <section className="w-full py-12 md:py-24 lg:py-32 bg-muted">
-          <div className="container px-4 md:px-6">
+        <section className="relative w-full py-12 md:py-24 lg:py-32 bg-muted overflow-hidden">
+          <div className="absolute inset-0 bg-gradient-to-r from-primary/5 via-transparent to-primary/5" />
+          <div className="container px-4 md:px-6 relative z-10">
             <div className="grid gap-6 lg:grid-cols-2 lg:gap-12">
               <div className="flex flex-col justify-center space-y-4">
                 <div className="space-y-2">
@@ -162,13 +222,7 @@ export default function HowItWorks() {
                 </ul>
               </div>
               <div className="flex items-center justify-center">
-                <img
-                  src="/placeholder.svg?height=400&width=600"
-                  width={600}
-                  height={400}
-                  alt="Blockchain Technology Visualization"
-                  className="aspect-video overflow-hidden rounded-xl object-cover"
-                />
+                <BlockchainVisualization />
               </div>
             </div>
           </div>
@@ -218,8 +272,9 @@ export default function HowItWorks() {
           </div>
         </section>
 
-        <section className="w-full py-12 md:py-24 lg:py-32 bg-muted">
-          <div className="container px-4 md:px-6">
+        <section className="relative w-full py-12 md:py-24 lg:py-32 bg-muted overflow-hidden">
+          <FloatingParticles />
+          <div className="container px-4 md:px-6 relative z-10">
             <div className="flex flex-col items-center justify-center space-y-4 text-center">
               <div className="space-y-2">
                 <h2 className="text-3xl font-bold tracking-tighter sm:text-4xl">Ready to Make a Difference?</h2>
@@ -283,12 +338,18 @@ interface ProcessStepProps {
 function ProcessStep({ number, title, description, icon: Icon }: ProcessStepProps) {
   return (
     <motion.div className="flex items-start gap-4" variants={fadeInUp}>
-      <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-primary text-primary-foreground">
+      <motion.div
+        className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-primary text-primary-foreground font-bold text-lg"
+        whileHover={{ scale: 1.1, rotate: 360 }}
+        transition={{ duration: 0.3 }}
+      >
         {number}
-      </div>
+      </motion.div>
       <div className="grid gap-1">
         <div className="flex items-center gap-2">
-          <Icon className="h-5 w-5 text-primary" />
+          <motion.div whileHover={{ scale: 1.2, rotate: 15 }} transition={{ duration: 0.2 }}>
+            <Icon className="h-6 w-6 text-primary" />
+          </motion.div>
           <h3 className="text-xl font-bold">{title}</h3>
         </div>
         <p className="text-muted-foreground">{description}</p>
@@ -305,7 +366,7 @@ interface FaqCardProps {
 function FaqCard({ question, answer }: FaqCardProps) {
   return (
     <motion.div variants={fadeInUp}>
-      <Card>
+      <Card className="h-full hover:shadow-lg transition-all duration-300 border-primary/20 hover:border-primary/40">
         <CardHeader>
           <CardTitle className="text-lg">{question}</CardTitle>
         </CardHeader>

@@ -178,4 +178,4 @@ export function MetaMaskButton() {
       </DropdownMenuContent>
     </DropdownMenu>
   );
-} 
+}

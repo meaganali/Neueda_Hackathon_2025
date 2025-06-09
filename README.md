@@ -51,39 +51,39 @@ This is a charity donation platform that allows users to donate to charities usi
 ### Installation
 
 1. Clone the repository:
-   ```bash
+   \`\`\`bash
    git clone <repository-url>
    cd <repository-directory>
-   ```
+   \`\`\`
 
 2. Install dependencies:
-   ```bash
+   \`\`\`bash
    npm install
    # or
    pnpm install
-   ```
+   \`\`\`
 
 3. Set up AstraDB by following the instructions in [ASTRADB_SETUP.md](ASTRADB_SETUP.md)
 
 4. Create a `.env` file in the root directory with the following content:
-   ```
+   \`\`\`
    ASTRADB_TOKEN=your_astradb_token
    ASTRADB_ID=your_astradb_id
    ASTRADB_REGION=your_astradb_region
    ASTRADB_NAMESPACE=charity_donations
-   ```
+   \`\`\`
 
 5. Run the setup script to verify your AstraDB connection and seed the database:
-   ```bash
+   \`\`\`bash
    node scripts/setup-astradb.js
-   ```
+   \`\`\`
 
 6. Start the development server:
-   ```bash
+   \`\`\`bash
    npm run dev
    # or
    pnpm dev
-   ```
+   \`\`\`
 
 7. Open [http://localhost:3000](http://localhost:3000) in your browser.
    You can also open [http://localhost:3000/test-astra](http://localhost:3000/test-astra) to verify the AstraDB connection.
@@ -119,18 +119,18 @@ This is a charity donation platform that allows users to donate to charities usi
 
 ### 5. Update Environment Variables
 - Update your `.env` file with the collected information:
-  ```
+  \`\`\`
   ASTRADB_TOKEN=your_generated_token
   ASTRADB_ID=your_database_id
   ASTRADB_REGION=your_database_region
   ASTRADB_NAMESPACE=charity_donations
-  ```
+  \`\`\`
 
 ### 6. Setup the Database with Aligned Charities
 - Run the setup script to check your connection and seed the database:
-  ```bash
+  \`\`\`bash
   node scripts/setup-astradb.js
-  ```
+  \`\`\`
 
 ### 7. Restart Your Application
 - If your application is running, restart it to load the new environment variables

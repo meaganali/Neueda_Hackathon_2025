@@ -21,4 +21,4 @@ export default function MetaMaskClientProvider({ children }: MetaMaskClientProvi
       </MetaMaskProvider>
     </>
   );
-} 
+}

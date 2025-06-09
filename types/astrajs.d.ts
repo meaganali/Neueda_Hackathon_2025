@@ -40,4 +40,4 @@ declare module '@astrajs/rest' {
   }
 
   export function createClient(options: AstraRestClientOptions): Promise<AstraRestClient>;
-} 
+}
