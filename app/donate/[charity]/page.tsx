@@ -2,7 +2,7 @@
 
 import React, { use } from "react"
 import Link from "next/link"
-import { ArrowLeft, Globe, Heart, Shield, CreditCard, Wallet } from "lucide-react"
+import { ArrowLeft, Globe, Heart, Shield, CreditCard, Wallet, Building } from "lucide-react"
 import { motion } from "framer-motion"
 import { useState, useEffect, useRef } from "react"
 
@@ -20,6 +20,25 @@ import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { useMetaMask } from "@/hooks/useMetaMask"
 import { createDonation, updateDonationStatus, getCharity } from "@/lib/astradb"
 import { MetaMaskButton } from "@/components/MetaMaskButton"
+
+// PayPal Icon component
+const PayPalIcon = () => (
+  <svg
+    xmlns="http://www.w3.org/2000/svg"
+    width="16"
+    height="16"
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="2"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+    className="h-4 w-4"
+  >
+    <path d="M17.5 7H20C21.1 7 22 7.9 22 9V12C22 13.1 21.1 14 20 14H17.5C18.3 14 19 13.3 19 12.5V8.5C19 7.7 18.3 7 17.5 7Z" />
+    <path d="M14 6H4C2.9 6 2 6.9 2 8V12C2 13.1 2.9 14 4 14H9L12 17V14H14C15.1 14 16 13.1 16 12V8C16 6.9 15.1 6 14 6Z" />
+  </svg>
+);
 
 const fadeInUp = {
   initial: { opacity: 0, y: 60 },
@@ -85,7 +104,7 @@ const defaultCharityData: Record<string, any> = {
 }
 
 export default function DonatePage({ params }: { params: { charity: string } }) {
-  const { charity: charityId } = use(params);
+  const { charity: charityId } = params;
   const [donationAmount, setDonationAmount] = useState("")
   const [customAmount, setCustomAmount] = useState("")
   const [isAnonymous, setIsAnonymous] = useState(false)
@@ -93,7 +112,8 @@ export default function DonatePage({ params }: { params: { charity: string } }) 
   const [donorInfo, setDonorInfo] = useState({
     firstName: "",
     lastName: "",
-    email: ""
+    email: "",
+    phone: ""
   })
   const [message, setMessage] = useState("")
   const [isSubmitting, setIsSubmitting] = useState(false)
@@ -241,6 +261,7 @@ export default function DonatePage({ params }: { params: { charity: string } }) 
           firstName: isAnonymous ? "Anonymous" : donorInfo.firstName,
           lastName: isAnonymous ? "Donor" : donorInfo.lastName,
           email: donorInfo.email,
+          phone: donorInfo.phone,
           isAnonymous
         },
         charity: charityId,
@@ -292,9 +313,23 @@ export default function DonatePage({ params }: { params: { charity: string } }) 
           console.error('Error processing crypto payment:', error)
           toast.error("Failed to process crypto payment")
         }
+      } else if (paymentMethod === 'paypal') {
+        // For PayPal (simulated success)
+        await updateDonationStatus(donationId, 'completed', 'paypal-' + Date.now())
+        toast.success("Thank you for your donation!", {
+          description: `Your donation of $${amount} has been successfully processed via PayPal.`
+        })
+        setSubmissionSuccess(`Your donation of $${amount} to ${charity.name} has been successfully processed through PayPal.`);
+      } else if (paymentMethod === 'bank-transfer') {
+        // For bank transfer (simulated success)
+        await updateDonationStatus(donationId, 'pending')
+        toast.success("Thank you for initiating your donation!", {
+          description: `Your donation of $${amount} is pending bank transfer confirmation.`
+        })
+        setSubmissionSuccess(`Your donation of $${amount} to ${charity.name} has been recorded. Please complete the bank transfer using the account details provided.`);
       } else {
-        // For other payment methods (simulated success)
-        await updateDonationStatus(donationId, 'completed', 'mock-transaction-' + Date.now())
+        // For credit card payments (simulated success)
+        await updateDonationStatus(donationId, 'completed', 'card-' + Date.now())
         toast.success("Thank you for your donation!", {
           description: `Your donation of $${amount} has been successfully processed.`
         })
@@ -605,6 +640,17 @@ export default function DonatePage({ params }: { params: { charity: string } }) 
                         />
                       </div>
 
+                      <div className="space-y-2">
+                        <Label htmlFor="phone">Phone</Label>
+                        <Input 
+                          id="phone" 
+                          type="tel" 
+                          placeholder="123-456-7890" 
+                          value={donorInfo.phone}
+                          onChange={handleInputChange}
+                        />
+                      </div>
+
                       <div className="flex items-center space-x-2">
                         <Checkbox
                           id="anonymous"
@@ -638,8 +684,8 @@ export default function DonatePage({ params }: { params: { charity: string } }) 
                           <SelectContent>
                             <SelectItem value="crypto">Cryptocurrency (MetaMask)</SelectItem>
                             <SelectItem value="credit-card">Credit Card</SelectItem>
-                            <SelectItem value="debit-card">Debit Card</SelectItem>
                             <SelectItem value="bank-transfer">Bank Transfer</SelectItem>
+                            <SelectItem value="paypal">PayPal</SelectItem>
                           </SelectContent>
                         </Select>
                       </div>
@@ -674,7 +720,37 @@ export default function DonatePage({ params }: { params: { charity: string } }) 
                             </div>
                           )}
                         </div>
-                      ) : (
+                      ) : paymentMethod === 'paypal' ? (
+                        <div className="space-y-4">
+                          <div className="border rounded-md p-4 space-y-2">
+                            <div className="font-medium flex items-center gap-2">
+                              <PayPalIcon />
+                              PayPal
+                            </div>
+                            <p className="text-sm text-muted-foreground">
+                              You'll be redirected to PayPal to complete your donation securely.
+                            </p>
+                            <div className="text-sm text-muted-foreground mt-2">
+                              <p>No PayPal account? You can also pay with a debit or credit card through PayPal.</p>
+                            </div>
+                          </div>
+                        </div>
+                      ) : paymentMethod === 'bank-transfer' ? (
+                        <div className="space-y-4">
+                          <div className="border rounded-md p-4 space-y-2">
+                            <div className="font-medium flex items-center gap-2">
+                              <Building className="h-4 w-4" />
+                              Bank Transfer
+                            </div>
+                            <div className="text-sm space-y-1">
+                              <p className="font-medium">Account details:</p>
+                              <p>Account Name: {charity.name}</p>
+                              <p>Account Number: XXXX-XXXX-XXXX-XXXX</p>
+                              <p>Reference: Your email address</p>
+                            </div>
+                          </div>
+                        </div>
+                      ) : paymentMethod === 'credit-card' ? (
                         <>
                           <div className="space-y-2">
                             <Label htmlFor="card-number">Card Number</Label>
@@ -695,7 +771,7 @@ export default function DonatePage({ params }: { params: { charity: string } }) 
                             </div>
                           </div>
                         </>
-                      )}
+                      ) : null}
                     </div>
 
                     <div className="space-y-2">
