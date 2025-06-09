@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { MetaMaskButton } from "@/components/MetaMaskButton"
 
 const fadeInUp = {
   initial: { opacity: 0, y: 60 },
@@ -64,6 +65,11 @@ export default function Home() {
               </Link>
             </motion.div>
             <motion.div whileHover={{ scale: 1.1 }}>
+              <Link href="/dashboard" className="text-sm font-medium hover:text-primary">
+                Dashboard
+              </Link>
+            </motion.div>
+            <motion.div whileHover={{ scale: 1.1 }}>
               <Link href="/about-us" className="text-sm font-medium hover:text-primary">
                 About Us
               </Link>
@@ -75,10 +81,13 @@ export default function Home() {
                 <Link href="#">Log In</Link>
               </Button>
             </motion.div>
-            <motion.div {...scaleOnHover}>
+            <motion.div {...scaleOnHover} className="hidden md:block">
               <Button asChild>
                 <Link href="#">Get Started</Link>
               </Button>
+            </motion.div>
+            <motion.div {...scaleOnHover}>
+              <MetaMaskButton />
             </motion.div>
           </div>
         </div>

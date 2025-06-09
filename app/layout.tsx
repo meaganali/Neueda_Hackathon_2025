@@ -3,13 +3,14 @@ import type { Metadata } from "next"
 import { Inter } from "next/font/google"
 import "./globals.css"
 import { ThemeProvider } from "@/components/theme-provider"
+import MetaMaskClientProvider from "@/components/MetaMaskClientProvider"
 
 const inter = Inter({ subsets: ["latin"] })
 
 export const metadata: Metadata = {
   title: "Trace the Change - Know Where Your Donations Go",
   description: "Track your charitable donations with blockchain technology for complete transparency.",
-    generator: 'v0.dev'
+  generator: 'v0.dev'
 }
 
 export default function RootLayout({
@@ -21,7 +22,9 @@ export default function RootLayout({
     <html lang="en">
       <body className={inter.className}>
         <ThemeProvider attribute="class" defaultTheme="light" enableSystem disableTransitionOnChange>
-          {children}
+          <MetaMaskClientProvider>
+            {children}
+          </MetaMaskClientProvider>
         </ThemeProvider>
       </body>
     </html>

@@ -1,9 +1,10 @@
 "use client"
 
+import React from "react"
 import Link from "next/link"
-import { ArrowLeft, Globe, Heart, Shield, CreditCard } from "lucide-react"
+import { ArrowLeft, Globe, Heart, Shield, CreditCard, Wallet } from "lucide-react"
 import { motion } from "framer-motion"
-import { useState } from "react"
+import { useState, useEffect, useRef } from "react"
 
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
@@ -13,6 +14,12 @@ import { Textarea } from "@/components/ui/textarea"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Checkbox } from "@/components/ui/checkbox"
 import { Badge } from "@/components/ui/badge"
+import { toast } from "sonner"
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
+
+import { useMetaMask } from "@/hooks/useMetaMask"
+import { createDonation, updateDonationStatus, getCharity } from "@/lib/astradb"
+import { MetaMaskButton } from "@/components/MetaMaskButton"
 
 const fadeInUp = {
   initial: { opacity: 0, y: 60 },
@@ -25,22 +32,23 @@ const scaleOnHover = {
   whileTap: { scale: 0.95 },
 }
 
-// Mock charity data - in a real app, this would come from an API
-const charityData: Record<string, any> = {
+// Default charity data in case database fetch fails
+const defaultCharityData: Record<string, any> = {
   "global-water-foundation": {
     name: "Global Water Foundation",
     category: "Environment",
-    description: "Providing clean water access to communities in need around the world.",
-    impact: "50 wells built serving over 25,000 people",
-    location: "East Africa",
+    description: "Providing clean water to communities in need around the world.",
+    impact: "4.5 million people now have access to clean water",
+    location: "Global",
     imageUrl: "/placeholder.svg?height=300&width=600",
     longDescription:
-      "The Global Water Foundation has been working tirelessly for over 15 years to bring clean, safe drinking water to communities across East Africa. Our comprehensive approach includes drilling wells, installing water purification systems, and training local communities in maintenance and sustainability practices.",
+      "The Global Water Foundation is committed to addressing the global water crisis by funding projects that provide access to clean and safe drinking water, improve sanitation facilities, and promote sustainable water management practices in underserved communities worldwide.",
     goals: [
-      "Build 100 new wells by end of 2025",
-      "Train 500 local water technicians",
-      "Reach 50,000 people with clean water access",
+      "Provide clean water access to 10 million people by 2025",
+      "Implement sustainable water management systems in 500 communities",
+      "Reduce water-borne diseases by 75% in target areas",
     ],
+    wallet: "0x1234567890123456789012345678901234567890",
   },
   "education-for-all": {
     name: "Education For All",
@@ -52,6 +60,7 @@ const charityData: Record<string, any> = {
     longDescription:
       "Education For All believes that every child deserves access to quality education. We work with local communities to build schools, train teachers, and provide educational materials to ensure children have the tools they need to succeed.",
     goals: ["Support 25 schools by 2026", "Train 200 teachers", "Provide educational materials to 10,000 students"],
+    wallet: "0x3456789012345678901234567890123456789012",
   },
   "childrens-health-fund": {
     name: "Children's Health Fund",
@@ -67,17 +76,293 @@ const charityData: Record<string, any> = {
       "Establish 10 new mobile clinics",
       "Train 100 local healthcare workers",
     ],
+    wallet: "0x2345678901234567890123456789012345678901",
   },
 }
 
 export default function DonatePage({ params }: { params: { charity: string } }) {
+  const { charity: charityId } = params;
   const [donationAmount, setDonationAmount] = useState("")
   const [customAmount, setCustomAmount] = useState("")
   const [isAnonymous, setIsAnonymous] = useState(false)
+  const [paymentMethod, setPaymentMethod] = useState<string>("")
+  const [donorInfo, setDonorInfo] = useState({
+    firstName: "",
+    lastName: "",
+    email: "",
+    phone: "",
+  })
+  const [message, setMessage] = useState("")
+  const [isSubmitting, setIsSubmitting] = useState(false)
+  const [submissionSuccess, setSubmissionSuccess] = useState<string | null>(null)
+  const [transactionHash, setTransactionHash] = useState<string | null>(null)
+  
+  // MetaMask integration
+  const { 
+    isConnected,
+    connect, 
+    account,
+    sendEth,
+    isInstalled
+  } = useMetaMask()
+  
+  // References to scroll to
+  const cryptoSectionRef = useRef<HTMLDivElement>(null)
+  
+  // State for charity data
+  const [charityData, setCharityData] = useState<Record<string, any>>({})
+  const [isLoadingCharity, setIsLoadingCharity] = useState(true)
 
-  const charity = charityData[params.charity] || charityData["global-water-foundation"]
-
+  // Fetch charity information from AstraDB
+  useEffect(() => {
+    const fetchCharity = async () => {
+      try {
+        setIsLoadingCharity(true)
+        const charity = await getCharity(charityId)
+        if (charity) {
+          setCharityData({
+            [charityId]: charity
+          })
+        }
+      } catch (error) {
+        console.error("Error fetching charity data:", error)
+        // If there's an error, fall back to default data
+        setCharityData(defaultCharityData)
+      } finally {
+        setIsLoadingCharity(false)
+      }
+    }
+    
+    fetchCharity()
+  }, [charityId])
+  
+  const charity = (charityData && charityData[charityId]) || 
+                  defaultCharityData[charityId] || 
+                  defaultCharityData["global-water-foundation"]
   const predefinedAmounts = [25, 50, 100, 250, 500, 1000]
+
+  // Handles change in form fields
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const { id, value } = e.target
+    setDonorInfo(prev => ({
+      ...prev,
+      [id.replace('-', '')]: value
+    }))
+  }
+
+  // Auto-select crypto payment method when connected to MetaMask
+  useEffect(() => {
+    if (isConnected && paymentMethod === "") {
+      setPaymentMethod("crypto")
+    }
+  }, [isConnected, paymentMethod])
+
+  const scrollToCryptoSection = () => {
+    if (cryptoSectionRef.current) {
+      cryptoSectionRef.current.scrollIntoView({ behavior: 'smooth' })
+    }
+  }
+
+  const handleConnectForPayment = async () => {
+    try {
+      await connect()
+      setPaymentMethod("crypto")
+      scrollToCryptoSection()
+    } catch (error) {
+      console.error("Failed to connect wallet:", error)
+    }
+  }
+
+  const handlePaymentMethodChange = (value: string) => {
+    setPaymentMethod(value)
+    if (value === 'crypto' && !isConnected) {
+      toast.info("Please connect your MetaMask wallet", {
+        description: "You'll need to connect your wallet to make a crypto donation",
+        action: {
+          label: "Connect",
+          onClick: handleConnectForPayment
+        }
+      })
+    }
+  }
+
+  const validateForm = () => {
+    // Amount validation
+    const amount = customAmount || donationAmount
+    if (!amount || parseFloat(amount) <= 0) {
+      toast.error("Please enter a valid donation amount")
+      return false
+    }
+    
+    // Basic validation for donor info
+    if (paymentMethod !== 'crypto' || !isAnonymous) {
+      if (!donorInfo.firstName.trim()) {
+        toast.error("Please enter your first name")
+        return false
+      }
+      if (!donorInfo.lastName.trim()) {
+        toast.error("Please enter your last name")
+        return false
+      }
+      if (!donorInfo.email.trim()) {
+        toast.error("Please enter your email address")
+        return false
+      }
+    }
+
+    // Payment method validation
+    if (!paymentMethod) {
+      toast.error("Please select a payment method")
+      return false
+    }
+    
+    // For crypto payments, check if MetaMask is connected
+    if (paymentMethod === 'crypto' && !isConnected) {
+      toast.error("Please connect your MetaMask wallet")
+      return false
+    }
+
+    return true
+  }
+
+  const handleDonate = async () => {
+    if (!validateForm()) return
+    
+    setIsSubmitting(true)
+    try {
+      const amount = customAmount || donationAmount
+
+      // Create donation record in AstraDB
+      const donationRecord = await createDonation({
+        donor: {
+          firstName: isAnonymous ? "Anonymous" : donorInfo.firstName,
+          lastName: isAnonymous ? "Donor" : donorInfo.lastName,
+          email: donorInfo.email,
+          phone: donorInfo.phone,
+          isAnonymous
+        },
+        charity: charityId,
+        amount: parseFloat(amount),
+        currency: 'USD',
+        message,
+        paymentMethod
+      })
+
+      // Handle payment based on method
+      if (paymentMethod === 'crypto') {
+        try {
+          // Get charity's wallet address from AstraDB
+          const charityInfo = await getCharity(charityId)
+          const charityWallet = charityInfo?.wallet || '0x0000000000000000000000000000000000000000'
+          
+          // Send crypto transaction
+          const txResult = await sendEth(
+            charityWallet,
+            amount,
+            `Donation to ${charity.name}`
+          )
+          
+          if (txResult.success) {
+            // Update donation with transaction hash
+            if (txResult.txHash) {
+              await updateDonationStatus(donationRecord.id, 'completed', txResult.txHash)
+              setTransactionHash(txResult.txHash)
+            } else {
+              await updateDonationStatus(donationRecord.id, 'completed')
+            }
+            toast.success("Thank you for your donation!", {
+              description: `Your donation of $${amount} has been successfully processed.`
+            })
+            setSubmissionSuccess(`Your donation of $${amount} to ${charity.name} has been successfully processed. Your transaction has been recorded on the blockchain.`);
+          } else {
+            await updateDonationStatus(donationRecord.id, 'failed')
+            toast.error("Transaction failed", {
+              description: txResult.error || "Please try again."
+            })
+          }
+        } catch (error) {
+          console.error('Error processing crypto payment:', error)
+          toast.error("Failed to process crypto payment")
+        }
+      } else {
+        // For other payment methods (simulated success)
+        await updateDonationStatus(donationRecord.id, 'completed', 'mock-transaction-' + Date.now())
+        toast.success("Thank you for your donation!", {
+          description: `Your donation of $${amount} has been successfully processed.`
+        })
+        setSubmissionSuccess(`Your donation of $${amount} to ${charity.name} has been successfully processed.`);
+      }
+    } catch (error) {
+      console.error('Error processing donation:', error)
+      toast.error("Failed to process your donation", {
+        description: "Please try again later."
+      })
+    } finally {
+      setIsSubmitting(false)
+    }
+  }
+
+  // Render success state if submission was successful
+  if (submissionSuccess) {
+    return (
+      <div className="flex min-h-screen flex-col">
+        <main className="flex-1">
+          <section className="w-full py-12 md:py-24 lg:py-32">
+            <div className="container px-4 md:px-6">
+              <div className="mx-auto max-w-3xl space-y-8">
+                <Link href="/charities" className="flex items-center text-sm font-medium text-primary hover:underline">
+                  <ArrowLeft className="mr-1 h-4 w-4" />
+                  Back to Charities
+                </Link>
+                
+                <Card>
+                  <CardHeader className="text-center">
+                    <CardTitle className="text-2xl">Donation Successful!</CardTitle>
+                    <CardDescription>
+                      Thank you for your generosity
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent className="space-y-6">
+                    <Alert>
+                      <Shield className="h-5 w-5" />
+                      <AlertTitle>Donation Confirmed</AlertTitle>
+                      <AlertDescription>
+                        {submissionSuccess}
+                      </AlertDescription>
+                    </Alert>
+                    
+                    {transactionHash && (
+                      <div className="space-y-3">
+                        <Label>Transaction Hash</Label>
+                        <div className="flex items-center gap-2">
+                          <Input value={transactionHash} readOnly className="font-mono text-xs" />
+                          <Button variant="outline" size="sm" onClick={() => {
+                            navigator.clipboard.writeText(transactionHash)
+                            toast.success("Transaction hash copied to clipboard")
+                          }}>
+                            Copy
+                          </Button>
+                        </div>
+                      </div>
+                    )}
+                    
+                    <div className="flex justify-center gap-4 pt-4">
+                      <Button asChild>
+                        <Link href="/">Return Home</Link>
+                      </Button>
+                      <Button variant="outline" asChild>
+                        <Link href="/charities">Donate Again</Link>
+                      </Button>
+                    </div>
+                  </CardContent>
+                </Card>
+              </div>
+            </div>
+          </section>
+        </main>
+      </div>
+    )
+  }
 
   return (
     <div className="flex min-h-screen flex-col">
@@ -134,114 +419,71 @@ export default function DonatePage({ params }: { params: { charity: string } }) 
         </div>
       </motion.header>
       <main className="flex-1">
-        <section className="w-full py-8 md:py-16 bg-gradient-to-b from-background to-muted">
+        <section className="w-full py-12 md:py-24 lg:py-32">
           <div className="container px-4 md:px-6">
-            <motion.div
-              className="flex items-center gap-4 mb-8"
-              initial={{ opacity: 0, x: -50 }}
-              animate={{ opacity: 1, x: 0 }}
-              transition={{ duration: 0.6 }}
-            >
-              <motion.div {...scaleOnHover}>
-                <Button asChild variant="outline" size="sm">
-                  <Link href="/charities">
-                    <ArrowLeft className="mr-2 h-4 w-4" />
-                    Back to Charities
-                  </Link>
-                </Button>
-              </motion.div>
-            </motion.div>
-
-            <div className="grid gap-8 lg:grid-cols-2 lg:gap-12">
+            <div className="mb-8">
+              <Link href="/charities" className="flex items-center text-sm font-medium text-primary hover:underline">
+                <ArrowLeft className="mr-1 h-4 w-4" />
+                Back to Charities
+              </Link>
+            </div>
+            <div className="grid gap-8 lg:grid-cols-2">
               <motion.div
-                className="space-y-6"
+                className="space-y-8"
                 initial={{ opacity: 0, x: -100 }}
                 animate={{ opacity: 1, x: 0 }}
                 transition={{ duration: 0.8 }}
               >
+                <div>
+                  <Badge variant="outline" className="mb-2">
+                    {charity.category}
+                  </Badge>
+                  <h1 className="text-3xl font-bold tracking-tighter sm:text-5xl">{charity.name}</h1>
+                  <p className="mt-2 text-muted-foreground">{charity.description}</p>
+                </div>
+
                 <motion.img
                   src={charity.imageUrl}
                   alt={charity.name}
-                  className="w-full h-64 object-cover rounded-xl"
-                  whileHover={{ scale: 1.02 }}
-                  transition={{ duration: 0.3 }}
+                  width={600}
+                  height={300}
+                  className="mx-auto aspect-[2/1] overflow-hidden rounded-xl object-cover"
+                  initial={{ opacity: 0, scale: 0.9 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  transition={{ duration: 0.5, delay: 0.2 }}
                 />
 
                 <div className="space-y-4">
-                  <div className="flex items-center gap-2">
-                    <motion.h1
-                      className="text-3xl font-bold tracking-tighter"
-                      initial={{ opacity: 0, y: 30 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      transition={{ duration: 0.6, delay: 0.2 }}
-                    >
-                      {charity.name}
-                    </motion.h1>
-                    <motion.div
-                      initial={{ opacity: 0, scale: 0.8 }}
-                      animate={{ opacity: 1, scale: 1 }}
-                      transition={{ duration: 0.5, delay: 0.4 }}
-                    >
-                      <Badge variant="outline">{charity.category}</Badge>
-                    </motion.div>
+                  <h2 className="text-2xl font-bold">About {charity.name}</h2>
+                  <p>{charity.longDescription}</p>
+                </div>
+
+                <div className="space-y-4">
+                  <h2 className="text-2xl font-bold">Our Goals</h2>
+                  <ul className="space-y-2">
+                    {charity.goals.map((goal: string, index: number) => (
+                      <motion.li
+                        key={index}
+                        className="flex items-start gap-2"
+                        initial={{ opacity: 0, x: -20 }}
+                        animate={{ opacity: 1, x: 0 }}
+                        transition={{ duration: 0.3, delay: 0.1 * index }}
+                      >
+                        <span className="mt-1 flex h-2 w-2 rounded-full bg-primary" />
+                        <span>{goal}</span>
+                      </motion.li>
+                    ))}
+                  </ul>
+                </div>
+
+                <div className="flex items-center gap-3 rounded-lg bg-primary/5 p-4">
+                  <div className="rounded-full bg-primary/10 p-2">
+                    <Heart className="h-5 w-5 text-primary" />
                   </div>
-
-                  <motion.p
-                    className="text-lg text-muted-foreground"
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ duration: 0.6, delay: 0.4 }}
-                  >
-                    {charity.description}
-                  </motion.p>
-
-                  <motion.p
-                    className="text-muted-foreground"
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ duration: 0.6, delay: 0.6 }}
-                  >
-                    {charity.longDescription}
-                  </motion.p>
-
-                  <motion.div
-                    className="space-y-2"
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ duration: 0.6, delay: 0.8 }}
-                  >
-                    <h3 className="font-semibold">Current Goals:</h3>
-                    <ul className="space-y-1">
-                      {charity.goals.map((goal: string, index: number) => (
-                        <motion.li
-                          key={index}
-                          className="flex items-center gap-2 text-sm text-muted-foreground"
-                          initial={{ opacity: 0, x: -20 }}
-                          animate={{ opacity: 1, x: 0 }}
-                          transition={{ duration: 0.4, delay: 1 + index * 0.1 }}
-                        >
-                          <Heart className="h-4 w-4 text-primary" />
-                          {goal}
-                        </motion.li>
-                      ))}
-                    </ul>
-                  </motion.div>
-
-                  <motion.div
-                    className="grid grid-cols-2 gap-4 pt-4"
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ duration: 0.6, delay: 1.2 }}
-                  >
-                    <div className="text-center p-4 bg-primary/5 rounded-lg">
-                      <p className="text-sm text-muted-foreground">Impact</p>
-                      <p className="font-semibold">{charity.impact}</p>
-                    </div>
-                    <div className="text-center p-4 bg-primary/5 rounded-lg">
-                      <p className="text-sm text-muted-foreground">Location</p>
-                      <p className="font-semibold">{charity.location}</p>
-                    </div>
-                  </motion.div>
+                  <div>
+                    <p className="font-medium">Current Impact</p>
+                    <p className="text-muted-foreground">{charity.impact}</p>
+                  </div>
                 </div>
               </motion.div>
 
@@ -324,22 +566,46 @@ export default function DonatePage({ params }: { params: { charity: string } }) 
                       <div className="grid grid-cols-2 gap-4">
                         <div className="space-y-2">
                           <Label htmlFor="first-name">First Name</Label>
-                          <Input id="first-name" placeholder="John" />
+                          <Input 
+                            id="first-name" 
+                            placeholder="John" 
+                            value={donorInfo.firstName}
+                            onChange={handleInputChange}
+                            disabled={isAnonymous}
+                          />
                         </div>
                         <div className="space-y-2">
                           <Label htmlFor="last-name">Last Name</Label>
-                          <Input id="last-name" placeholder="Doe" />
+                          <Input 
+                            id="last-name" 
+                            placeholder="Doe" 
+                            value={donorInfo.lastName}
+                            onChange={handleInputChange}
+                            disabled={isAnonymous}
+                          />
                         </div>
                       </div>
 
                       <div className="space-y-2">
                         <Label htmlFor="email">Email</Label>
-                        <Input id="email" type="email" placeholder="john@example.com" />
+                        <Input 
+                          id="email" 
+                          type="email" 
+                          placeholder="john@example.com" 
+                          value={donorInfo.email}
+                          onChange={handleInputChange}
+                        />
                       </div>
 
                       <div className="space-y-2">
                         <Label htmlFor="phone">Phone (Optional)</Label>
-                        <Input id="phone" type="tel" placeholder="+1 (555) 123-4567" />
+                        <Input 
+                          id="phone" 
+                          type="tel" 
+                          placeholder="+1 (555) 123-4567" 
+                          value={donorInfo.phone}
+                          onChange={handleInputChange}
+                        />
                       </div>
 
                       <div className="flex items-center space-x-2">
@@ -359,7 +625,7 @@ export default function DonatePage({ params }: { params: { charity: string } }) 
 
                       <div className="space-y-2">
                         <Label htmlFor="payment-method">Payment Method</Label>
-                        <Select>
+                        <Select value={paymentMethod} onValueChange={handlePaymentMethodChange}>
                           <SelectTrigger>
                             <SelectValue placeholder="Select payment method" />
                           </SelectTrigger>
@@ -367,34 +633,74 @@ export default function DonatePage({ params }: { params: { charity: string } }) 
                             <SelectItem value="credit-card">Credit Card</SelectItem>
                             <SelectItem value="debit-card">Debit Card</SelectItem>
                             <SelectItem value="bank-transfer">Bank Transfer</SelectItem>
-                            <SelectItem value="crypto">Cryptocurrency</SelectItem>
+                            <SelectItem value="crypto">Cryptocurrency (MetaMask)</SelectItem>
                           </SelectContent>
                         </Select>
                       </div>
 
-                      <div className="space-y-2">
-                        <Label htmlFor="card-number">Card Number</Label>
-                        <div className="relative">
-                          <CreditCard className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                          <Input id="card-number" placeholder="1234 5678 9012 3456" className="pl-10" />
+                      {paymentMethod === 'crypto' ? (
+                        <div className="space-y-4" ref={cryptoSectionRef}>
+                          {!isConnected ? (
+                            <div className="space-y-3 p-4 border rounded-md">
+                              <div className="font-medium flex items-center gap-2">
+                                <Wallet className="h-4 w-4" />
+                                Connect Your Wallet
+                              </div>
+                              <p className="text-sm text-muted-foreground">
+                                Connect your MetaMask wallet to make a cryptocurrency donation
+                              </p>
+                              <div className="pt-2">
+                                <MetaMaskButton />
+                              </div>
+                            </div>
+                          ) : (
+                            <div className="border rounded-md p-4 space-y-2">
+                              <div className="font-medium flex items-center gap-2">
+                                <Wallet className="h-4 w-4 text-primary" />
+                                MetaMask Connected
+                              </div>
+                              <p className="text-xs text-muted-foreground break-all">
+                                Wallet: {account}
+                              </p>
+                              <div className="text-sm text-muted-foreground mt-2">
+                                <p>Your donation will be sent directly to {charity.name}'s wallet address.</p>
+                              </div>
+                            </div>
+                          )}
                         </div>
-                      </div>
+                      ) : (
+                        <>
+                          <div className="space-y-2">
+                            <Label htmlFor="card-number">Card Number</Label>
+                            <div className="relative">
+                              <CreditCard className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                              <Input id="card-number" placeholder="1234 5678 9012 3456" className="pl-10" />
+                            </div>
+                          </div>
 
-                      <div className="grid grid-cols-2 gap-4">
-                        <div className="space-y-2">
-                          <Label htmlFor="expiry">Expiry Date</Label>
-                          <Input id="expiry" placeholder="MM/YY" />
-                        </div>
-                        <div className="space-y-2">
-                          <Label htmlFor="cvv">CVV</Label>
-                          <Input id="cvv" placeholder="123" />
-                        </div>
-                      </div>
+                          <div className="grid grid-cols-2 gap-4">
+                            <div className="space-y-2">
+                              <Label htmlFor="expiry">Expiry Date</Label>
+                              <Input id="expiry" placeholder="MM/YY" />
+                            </div>
+                            <div className="space-y-2">
+                              <Label htmlFor="cvv">CVV</Label>
+                              <Input id="cvv" placeholder="123" />
+                            </div>
+                          </div>
+                        </>
+                      )}
                     </div>
 
                     <div className="space-y-2">
                       <Label htmlFor="message">Message (Optional)</Label>
-                      <Textarea id="message" placeholder="Leave a message of support..." className="min-h-[80px]" />
+                      <Textarea 
+                        id="message" 
+                        placeholder="Leave a message of support..." 
+                        className="min-h-[80px]"
+                        value={message}
+                        onChange={(e) => setMessage(e.target.value)}
+                      />
                     </div>
 
                     <motion.div
@@ -414,8 +720,13 @@ export default function DonatePage({ params }: { params: { charity: string } }) 
                       </div>
 
                       <motion.div {...scaleOnHover}>
-                        <Button className="w-full" size="lg">
-                          Donate ${customAmount || donationAmount || "0"}
+                        <Button 
+                          className="w-full" 
+                          size="lg"
+                          onClick={handleDonate}
+                          disabled={isSubmitting}
+                        >
+                          {isSubmitting ? "Processing..." : `Donate $${customAmount || donationAmount || "0"}`}
                         </Button>
                       </motion.div>
 
