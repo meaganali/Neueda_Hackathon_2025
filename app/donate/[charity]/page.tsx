@@ -1,6 +1,6 @@
 "use client"
 
-import React from "react"
+import React, { use } from "react"
 import Link from "next/link"
 import { ArrowLeft, Globe, Heart, Shield, CreditCard, Wallet } from "lucide-react"
 import { motion } from "framer-motion"
@@ -85,7 +85,7 @@ const defaultCharityData: Record<string, any> = {
 }
 
 export default function DonatePage({ params }: { params: { charity: string } }) {
-  const { charity: charityId } = params;
+  const { charity: charityId } = use(params);
   const [donationAmount, setDonationAmount] = useState("")
   const [customAmount, setCustomAmount] = useState("")
   const [isAnonymous, setIsAnonymous] = useState(false)
@@ -150,7 +150,7 @@ export default function DonatePage({ params }: { params: { charity: string } }) 
     const { id, value } = e.target
     setDonorInfo(prev => ({
       ...prev,
-      [id.replace('-', '')]: value
+      [id]: value
     }))
   }
 
@@ -577,7 +577,7 @@ export default function DonatePage({ params }: { params: { charity: string } }) 
                         <div className="space-y-2">
                           <Label htmlFor="first-name">First Name</Label>
                           <Input 
-                            id="first-name" 
+                            id="firstName" 
                             placeholder="John" 
                             value={donorInfo.firstName}
                             onChange={handleInputChange}
@@ -587,7 +587,7 @@ export default function DonatePage({ params }: { params: { charity: string } }) 
                         <div className="space-y-2">
                           <Label htmlFor="last-name">Last Name</Label>
                           <Input 
-                            id="last-name" 
+                            id="lastName" 
                             placeholder="Doe" 
                             value={donorInfo.lastName}
                             onChange={handleInputChange}
@@ -622,7 +622,16 @@ export default function DonatePage({ params }: { params: { charity: string } }) 
                         <Checkbox
                           id="anonymous"
                           checked={isAnonymous}
-                          onCheckedChange={(checked) => setIsAnonymous(checked as boolean)}
+                          onCheckedChange={(checked) => {
+                            setIsAnonymous(checked as boolean);
+                            if (checked) {
+                              setDonorInfo(prev => ({
+                                ...prev,
+                                firstName: "",
+                                lastName: ""
+                              }));
+                            }
+                          }}
                         />
                         <Label htmlFor="anonymous" className="text-sm">
                           Make this donation anonymous
@@ -743,7 +752,7 @@ export default function DonatePage({ params }: { params: { charity: string } }) 
                       </motion.div>
 
                       <p className="text-xs text-muted-foreground text-center">
-                        A 2% platform fee will be applied to cover operational costs.
+                        100% of your donation goes directly to the charity
                       </p>
                     </motion.div>
                   </CardContent>
