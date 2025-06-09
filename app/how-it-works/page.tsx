@@ -229,7 +229,7 @@ export default function HowItWorks() {
               </div>
               <div className="flex flex-col gap-2 min-[400px]:flex-row">
                 <Button asChild size="lg" {...scaleOnHover}>
-                  <Link href="#">
+                  <Link href="/charities">
                     Start Donating
                     <ArrowRight className="ml-2 h-4 w-4" />
                   </Link>
@@ -263,13 +263,7 @@ export default function HowItWorks() {
             &copy; {new Date().getFullYear()} Trace the Change. All rights reserved.
           </p>
           <div className="flex gap-4">
-            <Link href="#" className="text-sm text-muted-foreground hover:text-foreground">
-              Privacy Policy
-            </Link>
-            <Link href="#" className="text-sm text-muted-foreground hover:text-foreground">
-              Terms of Service
-            </Link>
-            <Link href="#" className="text-sm text-muted-foreground hover:text-foreground">
+            <Link href="/about-us" className="text-sm text-muted-foreground hover:text-foreground">
               Contact
             </Link>
           </div>

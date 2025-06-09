@@ -719,15 +719,17 @@ export default function DonatePage({ params }: { params: { charity: string } }) 
                       animate={{ opacity: 1, y: 0 }}
                       transition={{ duration: 0.6, delay: 0.8 }}
                     >
-                      <div className="flex items-center gap-2 p-4 bg-primary/5 rounded-lg">
-                        <Shield className="h-5 w-5 text-primary" />
-                        <div className="text-sm">
-                          <p className="font-medium">Blockchain Verified</p>
-                          <p className="text-muted-foreground">
-                            Your donation will be tracked transparently on the blockchain
-                          </p>
+                      {paymentMethod === 'crypto' && (
+                        <div className="flex items-center gap-2 p-4 bg-primary/5 rounded-lg">
+                          <Shield className="h-5 w-5 text-primary" />
+                          <div className="text-sm">
+                            <p className="font-medium">Blockchain Verified</p>
+                            <p className="text-muted-foreground">
+                              Your donation will be tracked transparently on the blockchain
+                            </p>
+                          </div>
                         </div>
-                      </div>
+                      )}
 
                       <motion.div {...scaleOnHover}>
                         <Button 
@@ -741,8 +743,7 @@ export default function DonatePage({ params }: { params: { charity: string } }) 
                       </motion.div>
 
                       <p className="text-xs text-muted-foreground text-center">
-                        By donating, you agree to our Terms of Service and Privacy Policy. A 2% platform fee will be
-                        applied to cover operational costs.
+                        A 2% platform fee will be applied to cover operational costs.
                       </p>
                     </motion.div>
                   </CardContent>
@@ -774,17 +775,7 @@ export default function DonatePage({ params }: { params: { charity: string } }) 
           </p>
           <div className="flex gap-4">
             <motion.div whileHover={{ scale: 1.1 }}>
-              <Link href="#" className="text-sm text-muted-foreground hover:text-foreground">
-                Privacy Policy
-              </Link>
-            </motion.div>
-            <motion.div whileHover={{ scale: 1.1 }}>
-              <Link href="#" className="text-sm text-muted-foreground hover:text-foreground">
-                Terms of Service
-              </Link>
-            </motion.div>
-            <motion.div whileHover={{ scale: 1.1 }}>
-              <Link href="#" className="text-sm text-muted-foreground hover:text-foreground">
+              <Link href="/about-us" className="text-sm text-muted-foreground hover:text-foreground">
                 Contact
               </Link>
             </motion.div>
