@@ -1,4 +1,7 @@
 import { DataAPIClient } from "@datastax/astra-db-ts";
+import { v4 as uuidv4 } from 'uuid';
+import fs from 'fs';
+import path from 'path';
 
 // Define charity interface
 export interface Charity {
@@ -33,17 +36,17 @@ export interface Donation {
   transactionHash?: string;
   message?: string;
   paymentMethod: string;
-  createdAt?: string; // Add this for dashboard display
+  createdAt?: string;
 }
 
 // Initialize the client
-const token = process.env.ASTRA_DB_TOKEN || "mock-token";
-const endpoint = process.env.ASTRA_DB_ENDPOINT || "mock-endpoint";
+const token = process.env.ASTRA_DB_TOKEN;
+const endpoint = process.env.ASTRA_DB_ENDPOINT;
 
-// Flag to determine if we're using real Astra DB or mock data
-const isUsingRealDb = token !== "mock-token" && endpoint !== "mock-endpoint";
+// Flag to determine if we're using real Astra DB or local data
+const isUsingRealDb = !!(token && endpoint);
 
-// Initialize the client if we have real credentials
+// Initialize the client
 let client: any;
 let db: any;
 
@@ -57,7 +60,22 @@ if (isUsingRealDb) {
   }
 }
 
-// Default charity data
+// Load local donations if they exist
+let localDonations: Donation[] = [];
+try {
+  const dataPath = path.join(process.cwd(), 'data', 'donations.json');
+  if (fs.existsSync(dataPath)) {
+    const data = fs.readFileSync(dataPath, 'utf8');
+    localDonations = JSON.parse(data);
+    console.log(`Loaded ${localDonations.length} donations from local file`);
+  } else {
+    console.log("No local donations file found");
+  }
+} catch (error) {
+  console.error("Error loading local donations:", error);
+}
+
+// Default charity data - used as fallback if database is unavailable
 const defaultCharities: Charity[] = [
   {
     id: "global-water-foundation",
@@ -111,96 +129,20 @@ const defaultCharities: Charity[] = [
 
 // Export the getCharity function to be used directly
 export async function getCharity(id: string): Promise<Charity | null> {
-  // If using mock data, return the default charity
-  if (!isUsingRealDb) {
-    const charity = defaultCharities.find(c => c.id === id);
-    return charity || null;
-  }
   return astraService.getCharityById(id);
 }
 
 // Export donation functions
 export async function createDonation(donationData: Partial<Donation>): Promise<string | null> {
-  // If using mock data, return a mock ID
-  if (!isUsingRealDb) {
-    console.log("Creating mock donation:", donationData);
-    return "mock-donation-id-" + Date.now();
-  }
   return astraService.createDonation(donationData);
 }
 
 export async function updateDonationStatus(id: string, status: string, transactionHash?: string): Promise<boolean> {
-  // If using mock data, just return success
-  if (!isUsingRealDb) {
-    console.log(`Updating mock donation ${id} status to ${status}`);
-    return true;
-  }
   return astraService.updateDonationStatus(id, status, transactionHash);
 }
 
 // Export function to get donations by donor email
 export async function getDonationsByDonorEmail(email: string): Promise<Donation[]> {
-  // If using mock data, return mock donations
-  if (!isUsingRealDb) {
-    // Generate some sample donations for the demo
-    const currentTime = new Date();
-    return [
-      {
-        id: "mock-donation-" + Date.now(),
-        donor: {
-          firstName: "Anonymous",
-          lastName: "Donor",
-          email: email,
-          phone: "",
-          isAnonymous: true
-        },
-        charity: "global-water-foundation",
-        amount: 5,
-        currency: "USD",
-        timestamp: currentTime,
-        status: "completed",
-        transactionHash: "0xfdd4df6b64ef7d24619ea0e7bd304938e9bf56f9a31c7e8eee875986e8b7f42b",
-        message: "Test 1",
-        paymentMethod: "crypto",
-        createdAt: currentTime.toISOString()
-      },
-      {
-        id: "mock-donation-1",
-        donor: {
-          firstName: "John",
-          lastName: "Doe",
-          email: email,
-          phone: "",
-          isAnonymous: false
-        },
-        charity: "global-water-foundation",
-        amount: 100,
-        currency: "USD",
-        timestamp: new Date(currentTime.getTime() - 2 * 24 * 60 * 60 * 1000),
-        status: "completed",
-        transactionHash: "0xabcd1234567890",
-        paymentMethod: "crypto",
-        createdAt: new Date(currentTime.getTime() - 2 * 24 * 60 * 60 * 1000).toISOString()
-      },
-      {
-        id: "mock-donation-2",
-        donor: {
-          firstName: "John",
-          lastName: "Doe",
-          email: email,
-          phone: "",
-          isAnonymous: false
-        },
-        charity: "education-for-all",
-        amount: 50,
-        currency: "USD",
-        timestamp: new Date(currentTime.getTime() - 5 * 24 * 60 * 60 * 1000),
-        status: "completed",
-        paymentMethod: "credit-card",
-        createdAt: new Date(currentTime.getTime() - 5 * 24 * 60 * 60 * 1000).toISOString()
-      }
-    ];
-  }
   return astraService.getDonationsByDonorEmail(email);
 }
 
@@ -216,7 +158,7 @@ export const astraService = {
       const collection = db.collection("charities");
       const results = await collection.find({}).toArray();
       // Convert the results to the Charity type
-      return results.map(charity => ({
+      return results.map((charity: any) => ({
         id: charity.id as string,
         name: charity.name as string,
         category: charity.category as string,
@@ -247,7 +189,9 @@ export const astraService = {
       const charity = await collection.findOne({ id });
       
       if (!charity) {
-        return null;
+        // Try to find in default charities if not in DB
+        const defaultCharity = defaultCharities.find(c => c.id === id);
+        return defaultCharity || null;
       }
       
       // Convert to Charity type
@@ -266,75 +210,165 @@ export const astraService = {
       };
     } catch (error) {
       console.error(`Error fetching charity with ID ${id}:`, error);
-      return null;
+      const defaultCharity = defaultCharities.find(c => c.id === id);
+      return defaultCharity || null;
     }
   },
 
   // Create donation
   async createDonation(donationData: Partial<Donation>): Promise<string | null> {
-    try {
-      const collection = db.collection("donations");
-      const donation = {
-        ...donationData,
-        timestamp: new Date(),
-        status: "pending"
-      };
+    const donationId = uuidv4();
+    const now = new Date();
+    
+    const donation = {
+      id: donationId,
+      ...donationData,
+      timestamp: now,
+      createdAt: now.toISOString(),
+      status: "pending"
+    };
 
-      const result = await collection.insertOne(donation);
-      return donation.id || null;
+    // Simulate payment processing but don't actually charge
+    console.log(`Processing donation: ${donation.id} - Amount: ${donation.amount} ${donation.currency}`);
+    
+    if (isUsingRealDb) {
+      try {
+        const collection = db.collection("donations");
+        await collection.insertOne(donation);
+        return donationId;
+      } catch (error) {
+        console.error("Error creating donation in AstraDB:", error);
+        // Fall back to local storage
+      }
+    }
+    
+    // If AstraDB is not available or failed, save to local array
+    try {
+      // Add to local donations
+      localDonations.push(donation as Donation);
+      
+      // Save to file
+      const dataDir = path.join(process.cwd(), 'data');
+      if (!fs.existsSync(dataDir)) {
+        fs.mkdirSync(dataDir);
+      }
+      
+      const filePath = path.join(dataDir, 'donations.json');
+      fs.writeFileSync(filePath, JSON.stringify(localDonations, null, 2));
+      
+      console.log(`Saved donation to local file. Total donations: ${localDonations.length}`);
+      return donationId;
     } catch (error) {
-      console.error("Error creating donation:", error);
+      console.error("Error saving donation locally:", error);
       return null;
     }
   },
 
   // Update donation status
   async updateDonationStatus(id: string, status: string, transactionHash?: string): Promise<boolean> {
-    try {
-      const collection = db.collection("donations");
-      
-      const updateData: Record<string, any> = { status };
-      if (transactionHash) {
-        updateData.transactionHash = transactionHash;
+    console.log(`Updating donation ${id} status to ${status}${transactionHash ? ` with transaction hash ${transactionHash}` : ''}`);
+    
+    if (isUsingRealDb) {
+      try {
+        const collection = db.collection("donations");
+        
+        const updateData: Record<string, any> = { status };
+        if (transactionHash) {
+          updateData.transactionHash = transactionHash;
+        }
+        
+        await collection.updateOne(
+          { id },
+          { $set: updateData }
+        );
+        
+        return true;
+      } catch (error) {
+        console.error(`Error updating donation status in AstraDB for ${id}:`, error);
+        // Fall back to local storage
       }
-      
-      const result = await collection.updateOne(
-        { id },
-        { $set: updateData }
-      );
-      
-      return true;
+    }
+    
+    // If AstraDB is not available or failed, update in local array
+    try {
+      const donationIndex = localDonations.findIndex(d => d.id === id);
+      if (donationIndex !== -1) {
+        localDonations[donationIndex].status = status;
+        if (transactionHash) {
+          localDonations[donationIndex].transactionHash = transactionHash;
+        }
+        
+        // Save to file
+        const filePath = path.join(process.cwd(), 'data', 'donations.json');
+        fs.writeFileSync(filePath, JSON.stringify(localDonations, null, 2));
+        
+        console.log(`Updated donation status in local file`);
+        return true;
+      } else {
+        console.error(`Donation with ID ${id} not found in local data`);
+        return false;
+      }
     } catch (error) {
-      console.error(`Error updating donation status for ${id}:`, error);
+      console.error(`Error updating donation status locally for ${id}:`, error);
       return false;
     }
   },
   
   // Get donations by donor email
   async getDonationsByDonorEmail(email: string): Promise<Donation[]> {
+    if (isUsingRealDb) {
+      try {
+        const collection = db.collection("donations");
+        const results = await collection.find({ "donor.email": email }).toArray();
+        
+        return results as unknown as Donation[];
+      } catch (error) {
+        console.error(`Error fetching donations from AstraDB for email ${email}:`, error);
+        // Fall back to local storage
+      }
+    }
+    
+    // If AstraDB is not available or failed, get from local array
     try {
-      const collection = db.collection("donations");
-      const results = await collection.find({ "donor.email": email }).toArray();
-      
-      return results as unknown as Donation[];
+      const userDonations = localDonations.filter(d => d.donor.email === email);
+      console.log(`Found ${userDonations.length} donations for email ${email} in local data`);
+      return userDonations;
     } catch (error) {
-      console.error(`Error fetching donations for email ${email}:`, error);
+      console.error(`Error fetching donations locally for email ${email}:`, error);
       return [];
     }
   },
 
-  // Add donation to a charity
-  async addDonation(charityId: string, donation: { amount: number; donor: string; date: Date }) {
+  // Get all recent donations
+  async getAllDonations(limit: number = 10): Promise<Donation[]> {
+    if (isUsingRealDb) {
+      try {
+        const collection = db.collection("donations");
+        const results = await collection.find({})
+          .sort({ timestamp: -1 })
+          .limit(limit)
+          .toArray();
+        
+        return results as unknown as Donation[];
+      } catch (error) {
+        console.error("Error fetching recent donations from AstraDB:", error);
+        // Fall back to local storage
+      }
+    }
+    
+    // If AstraDB is not available or failed, get from local array
     try {
-      const collection = db.collection("donations");
-      await collection.insertOne({
-        charityId,
-        ...donation,
+      // Sort by timestamp descending
+      const sortedDonations = [...localDonations].sort((a, b) => {
+        const dateA = a.timestamp ? new Date(a.timestamp).getTime() : 0;
+        const dateB = b.timestamp ? new Date(b.timestamp).getTime() : 0;
+        return dateB - dateA;
       });
-      return true;
+      
+      return sortedDonations.slice(0, limit);
     } catch (error) {
-      console.error("Error adding donation:", error);
-      return false;
+      console.error("Error fetching recent donations locally:", error);
+      return [];
     }
   }
 };
