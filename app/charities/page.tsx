@@ -33,7 +33,7 @@ const scaleOnHover = {
   whileTap: { scale: 0.95 },
 }
 
-// Hardcoded charities in case AstraDB is not available
+// Fallback charities in case AstraDB is not available
 const fallbackCharities: Charity[] = [
   {
     id: "global-water-foundation",
@@ -85,6 +85,9 @@ const fallbackCharities: Charity[] = [
   }
 ];
 
+// List of allowed charity IDs
+const allowedCharityIds = ["global-water-foundation", "education-for-all", "childrens-health-fund"];
+
 export default function Charities() {
   const [charities, setCharities] = useState<Charity[]>(fallbackCharities);
   const [loading, setLoading] = useState(true);
@@ -95,9 +98,16 @@ export default function Charities() {
     async function loadCharities() {
       try {
         const data = await astraService.getAllCharities();
-        // Only use AstraDB data if we got results back
-        if (data && data.length > 0) {
-          setCharities(data);
+        
+        // Filter to only show the three specific charities
+        const filteredData = data.filter(charity => allowedCharityIds.includes(charity.id));
+        
+        // Only use AstraDB data if we got valid results back
+        if (filteredData && filteredData.length > 0) {
+          setCharities(filteredData);
+        } else {
+          // Use fallback data if the filtered results are empty
+          setCharities(fallbackCharities);
         }
       } catch (err) {
         console.error("Error fetching charities from AstraDB:", err);
@@ -200,7 +210,7 @@ export default function Charities() {
                 </motion.p>
               </div>
               <motion.div
-                className="w-full max-w-md space-y-2"
+                className="w-full max-w-sm space-y-2"
                 initial={{ opacity: 0, y: 30 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.8, delay: 0.6 }}
@@ -218,7 +228,7 @@ export default function Charities() {
               </motion.div>
               {error && (
                 <motion.div 
-                  className="bg-yellow-100 border-l-4 border-yellow-500 text-yellow-700 p-4 mt-4" 
+                  className="bg-yellow-100 border-l-4 border-yellow-500 text-yellow-700 p-4 mt-4 max-w-md" 
                   initial={{ opacity: 0 }}
                   animate={{ opacity: 1 }}
                 >
@@ -231,9 +241,9 @@ export default function Charities() {
 
         <section className="w-full py-12 md:py-24 lg:py-32 bg-background">
           <div className="container px-4 md:px-6">
-            <motion.div initial={{ opacity: 0, y: 30 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.8 }}>
+            <motion.div className="mx-auto max-w-6xl" initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
               <Tabs defaultValue="all" className="w-full">
-                <TabsList className="w-full max-w-md mx-auto grid grid-cols-4 mb-8">
+                <TabsList className="grid w-full grid-cols-4">
                   <TabsTrigger value="all">All</TabsTrigger>
                   <TabsTrigger value="environment">Environment</TabsTrigger>
                   <TabsTrigger value="education">Education</TabsTrigger>
