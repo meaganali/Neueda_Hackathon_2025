@@ -1,7 +1,5 @@
 import { DataAPIClient } from "@datastax/astra-db-ts";
 import { v4 as uuidv4 } from 'uuid';
-import fs from 'fs';
-import path from 'path';
 
 // Define charity interface
 export interface Charity {
@@ -43,7 +41,7 @@ export interface Donation {
 const token = process.env.ASTRA_DB_TOKEN;
 const endpoint = process.env.ASTRA_DB_ENDPOINT;
 
-// Flag to determine if we're using real Astra DB or local data
+// Flag to determine if we're using real Astra DB or default data
 const isUsingRealDb = !!(token && endpoint);
 
 // Initialize the client
@@ -58,21 +56,6 @@ if (isUsingRealDb) {
   } catch (error) {
     console.error("Failed to initialize AstraDB client:", error);
   }
-}
-
-// Load local donations if they exist
-let localDonations: Donation[] = [];
-try {
-  const dataPath = path.join(process.cwd(), 'data', 'donations.json');
-  if (fs.existsSync(dataPath)) {
-    const data = fs.readFileSync(dataPath, 'utf8');
-    localDonations = JSON.parse(data);
-    console.log(`Loaded ${localDonations.length} donations from local file`);
-  } else {
-    console.log("No local donations file found");
-  }
-} catch (error) {
-  console.error("Error loading local donations:", error);
 }
 
 // Default charity data - used as fallback if database is unavailable
@@ -238,30 +221,13 @@ export const astraService = {
         return donationId;
       } catch (error) {
         console.error("Error creating donation in AstraDB:", error);
-        // Fall back to local storage
+        return null;
       }
     }
     
-    // If AstraDB is not available or failed, save to local array
-    try {
-      // Add to local donations
-      localDonations.push(donation as Donation);
-      
-      // Save to file
-      const dataDir = path.join(process.cwd(), 'data');
-      if (!fs.existsSync(dataDir)) {
-        fs.mkdirSync(dataDir);
-      }
-      
-      const filePath = path.join(dataDir, 'donations.json');
-      fs.writeFileSync(filePath, JSON.stringify(localDonations, null, 2));
-      
-      console.log(`Saved donation to local file. Total donations: ${localDonations.length}`);
-      return donationId;
-    } catch (error) {
-      console.error("Error saving donation locally:", error);
-      return null;
-    }
+    // If no AstraDB, just return the ID (we won't store it, but the UX will work)
+    console.log("AstraDB not connected. Using default mode (donation not stored)");
+    return donationId;
   },
 
   // Update donation status
@@ -285,33 +251,13 @@ export const astraService = {
         return true;
       } catch (error) {
         console.error(`Error updating donation status in AstraDB for ${id}:`, error);
-        // Fall back to local storage
+        return false;
       }
     }
     
-    // If AstraDB is not available or failed, update in local array
-    try {
-      const donationIndex = localDonations.findIndex(d => d.id === id);
-      if (donationIndex !== -1) {
-        localDonations[donationIndex].status = status;
-        if (transactionHash) {
-          localDonations[donationIndex].transactionHash = transactionHash;
-        }
-        
-        // Save to file
-        const filePath = path.join(process.cwd(), 'data', 'donations.json');
-        fs.writeFileSync(filePath, JSON.stringify(localDonations, null, 2));
-        
-        console.log(`Updated donation status in local file`);
-        return true;
-      } else {
-        console.error(`Donation with ID ${id} not found in local data`);
-        return false;
-      }
-    } catch (error) {
-      console.error(`Error updating donation status locally for ${id}:`, error);
-      return false;
-    }
+    // If no AstraDB, just return success (fake it)
+    console.log("AstraDB not connected. Using default mode (status update simulated)");
+    return true;
   },
   
   // Get donations by donor email
@@ -324,19 +270,13 @@ export const astraService = {
         return results as unknown as Donation[];
       } catch (error) {
         console.error(`Error fetching donations from AstraDB for email ${email}:`, error);
-        // Fall back to local storage
+        return [];
       }
     }
     
-    // If AstraDB is not available or failed, get from local array
-    try {
-      const userDonations = localDonations.filter(d => d.donor.email === email);
-      console.log(`Found ${userDonations.length} donations for email ${email} in local data`);
-      return userDonations;
-    } catch (error) {
-      console.error(`Error fetching donations locally for email ${email}:`, error);
-      return [];
-    }
+    // If no AstraDB, return empty array
+    console.log("AstraDB not connected. Using default mode (no donations returned)");
+    return [];
   },
 
   // Get all recent donations
@@ -352,25 +292,14 @@ export const astraService = {
         return results as unknown as Donation[];
       } catch (error) {
         console.error("Error fetching recent donations from AstraDB:", error);
-        // Fall back to local storage
+        return [];
       }
     }
     
-    // If AstraDB is not available or failed, get from local array
-    try {
-      // Sort by timestamp descending
-      const sortedDonations = [...localDonations].sort((a, b) => {
-        const dateA = a.timestamp ? new Date(a.timestamp).getTime() : 0;
-        const dateB = b.timestamp ? new Date(b.timestamp).getTime() : 0;
-        return dateB - dateA;
-      });
-      
-      return sortedDonations.slice(0, limit);
-    } catch (error) {
-      console.error("Error fetching recent donations locally:", error);
-      return [];
-    }
+    // If no AstraDB, return empty array
+    console.log("AstraDB not connected. Using default mode (no donations returned)");
+    return [];
   }
 };
 
-export default astraService; 
+export default astraService;

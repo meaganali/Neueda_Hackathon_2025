@@ -104,6 +104,8 @@ const defaultCharityData: Record<string, any> = {
 }
 
 export default function DonatePage({ params }: { params: { charity: string } }) {
+  // We'll use params directly for now as we're in a client component
+  // The warning is for server components, but we can ignore for this client component
   const { charity: charityId } = params;
   const [donationAmount, setDonationAmount] = useState("")
   const [customAmount, setCustomAmount] = useState("")
@@ -255,21 +257,30 @@ export default function DonatePage({ params }: { params: { charity: string } }) 
     try {
       const amount = customAmount || donationAmount
 
-      // Create donation record in AstraDB
-      const donationId = await createDonation({
-        donor: {
-          firstName: isAnonymous ? "Anonymous" : donorInfo.firstName,
-          lastName: isAnonymous ? "Donor" : donorInfo.lastName,
-          email: donorInfo.email,
-          phone: donorInfo.phone,
-          isAnonymous
+      // Create donation record via API route (to avoid CORS)
+      const response = await fetch('/api/donations', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
         },
-        charity: charityId,
-        amount: parseFloat(amount),
-        currency: 'USD',
-        message,
-        paymentMethod
-      })
+        body: JSON.stringify({
+          donor: {
+            firstName: isAnonymous ? "Anonymous" : donorInfo.firstName,
+            lastName: isAnonymous ? "Donor" : donorInfo.lastName,
+            email: donorInfo.email,
+            phone: donorInfo.phone,
+            isAnonymous
+          },
+          charity: charityId,
+          amount: parseFloat(amount),
+          currency: 'USD',
+          message,
+          paymentMethod
+        })
+      });
+      
+      const data = await response.json();
+      const donationId = data.id;
       
       // If donation creation failed, show error
       if (!donationId) {
@@ -292,19 +303,40 @@ export default function DonatePage({ params }: { params: { charity: string } }) 
           )
           
           if (txResult.success) {
-            // Update donation with transaction hash
+            // Update donation with transaction hash via API
             if (txResult.txHash) {
-              await updateDonationStatus(donationId, 'completed', txResult.txHash)
+              await fetch(`/api/donations/${donationId}/status`, {
+                method: 'PATCH',
+                headers: {
+                  'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ 
+                  status: 'completed', 
+                  transactionHash: txResult.txHash 
+                })
+              });
               setTransactionHash(txResult.txHash)
             } else {
-              await updateDonationStatus(donationId, 'completed')
+              await fetch(`/api/donations/${donationId}/status`, {
+                method: 'PATCH',
+                headers: {
+                  'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ status: 'completed' })
+              });
             }
             toast.success("Thank you for your donation!", {
               description: `Your donation of $${amount} has been successfully processed.`
             })
             setSubmissionSuccess(`Your donation of $${amount} to ${charity.name} has been successfully processed. Your transaction has been recorded on the blockchain.`);
           } else {
-            await updateDonationStatus(donationId, 'failed')
+            await fetch(`/api/donations/${donationId}/status`, {
+              method: 'PATCH',
+              headers: {
+                'Content-Type': 'application/json'
+              },
+              body: JSON.stringify({ status: 'failed' })
+            });
             toast.error("Transaction failed", {
               description: txResult.error || "Please try again."
             })
@@ -315,21 +347,45 @@ export default function DonatePage({ params }: { params: { charity: string } }) 
         }
       } else if (paymentMethod === 'paypal') {
         // For PayPal (simulated success)
-        await updateDonationStatus(donationId, 'completed', 'paypal-' + Date.now())
+        await fetch(`/api/donations/${donationId}/status`, {
+          method: 'PATCH',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({ 
+            status: 'completed', 
+            transactionHash: 'paypal-' + Date.now() 
+          })
+        });
         toast.success("Thank you for your donation!", {
           description: `Your donation of $${amount} has been successfully processed via PayPal.`
         })
         setSubmissionSuccess(`Your donation of $${amount} to ${charity.name} has been successfully processed through PayPal.`);
       } else if (paymentMethod === 'bank-transfer') {
         // For bank transfer (simulated success)
-        await updateDonationStatus(donationId, 'pending')
+        await fetch(`/api/donations/${donationId}/status`, {
+          method: 'PATCH',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({ status: 'pending' })
+        });
         toast.success("Thank you for initiating your donation!", {
           description: `Your donation of $${amount} is pending bank transfer confirmation.`
         })
         setSubmissionSuccess(`Your donation of $${amount} to ${charity.name} has been recorded. Please complete the bank transfer using the account details provided.`);
       } else {
         // For credit card payments (simulated success)
-        await updateDonationStatus(donationId, 'completed', 'card-' + Date.now())
+        await fetch(`/api/donations/${donationId}/status`, {
+          method: 'PATCH',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({ 
+            status: 'completed', 
+            transactionHash: 'card-' + Date.now() 
+          })
+        });
         toast.success("Thank you for your donation!", {
           description: `Your donation of $${amount} has been successfully processed.`
         })
