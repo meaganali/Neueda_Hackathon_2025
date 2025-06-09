@@ -1,6 +1,8 @@
 "use client"
 
 import Link from "next/link"
+import Image from "next/image"
+import { useEffect, useState } from "react"
 import { ArrowRight, BarChart3, Globe, Shield } from "lucide-react"
 import { motion } from "framer-motion"
 
@@ -9,6 +11,8 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { MetaMaskButton } from "@/components/MetaMaskButton"
+import { astraService, Donation } from "@/lib/astradb"
+import { Badge } from "@/components/ui/badge"
 
 const fadeInUp = {
   initial: { opacity: 0, y: 60 },
@@ -30,6 +34,62 @@ const scaleOnHover = {
 }
 
 export default function Home() {
+  const [recentDonations, setRecentDonations] = useState<Donation[]>([]);
+  const [isLoadingDonations, setIsLoadingDonations] = useState(true);
+
+  // Load recent donations from AstraDB
+  useEffect(() => {
+    async function fetchDonations() {
+      try {
+        const donations = await astraService.getAllDonations(5);
+        setRecentDonations(donations);
+      } catch (error) {
+        console.error("Failed to fetch donations:", error);
+      } finally {
+        setIsLoadingDonations(false);
+      }
+    }
+    
+    fetchDonations();
+  }, []);
+  
+  // Format date string
+  const formatDate = (dateString: string | undefined) => {
+    if (!dateString) return "N/A";
+    const date = new Date(dateString);
+    return date.toLocaleDateString('en-US', {
+      year: 'numeric',
+      month: 'short',
+      day: 'numeric'
+    });
+  }
+
+  // Format donor name
+  const formatDonorName = (donation: Donation) => {
+    if (!donation.donor) return "Anonymous";
+    if (donation.donor.isAnonymous) return "Anonymous";
+    return `${donation.donor.firstName} ${donation.donor.lastName}`;
+  }
+
+  // Get charity name from ID
+  const getCharityName = (charityId: string) => {
+    const charities: Record<string, string> = {
+      "global-water-foundation": "Global Water Foundation",
+      "education-for-all": "Education For All",
+      "childrens-health-fund": "Children's Health Fund"
+    };
+    
+    return charities[charityId] || charityId;
+  }
+
+  // Format amount
+  const formatAmount = (amount: number, currency: string = "USD") => {
+    return new Intl.NumberFormat('en-US', {
+      style: 'currency',
+      currency: currency
+    }).format(amount);
+  }
+
   return (
     <div className="flex min-h-screen flex-col">
       <motion.header
@@ -39,21 +99,19 @@ export default function Home() {
         className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60"
       >
         <div className="container flex h-16 items-center justify-between">
-          <motion.div className="flex items-center gap-2 font-bold" whileHover={{ scale: 1.05 }}>
-            <motion.div
-              animate={{ rotate: 360 }}
-              transition={{ duration: 20, repeat: Number.POSITIVE_INFINITY, ease: "linear" }}
-            >
-              <Globe className="h-5 w-5 text-primary" />
+          <Link href="/">
+            <motion.div className="flex items-center gap-2 font-bold" whileHover={{ scale: 1.05 }}>
+              <Image
+                src="/trace-the-change-logo.png"
+                width={32}
+                height={32}
+                alt="Trace the Change Logo"
+                className="rounded-full"
+              />
+              <span>Trace the Change</span>
             </motion.div>
-            <span>Trace the Change</span>
-          </motion.div>
+          </Link>
           <nav className="hidden md:flex gap-6">
-            <motion.div whileHover={{ scale: 1.1 }}>
-              <Link href="/" className="text-sm font-medium hover:text-primary">
-                Home
-              </Link>
-            </motion.div>
             <motion.div whileHover={{ scale: 1.1 }}>
               <Link href="/how-it-works" className="text-sm font-medium hover:text-primary">
                 How It Works
@@ -67,11 +125,6 @@ export default function Home() {
             <motion.div whileHover={{ scale: 1.1 }}>
               <Link href="/dashboard" className="text-sm font-medium hover:text-primary">
                 Dashboard
-              </Link>
-            </motion.div>
-            <motion.div whileHover={{ scale: 1.1 }}>
-              <Link href="/about-us" className="text-sm font-medium hover:text-primary">
-                About Us
               </Link>
             </motion.div>
           </nav>
@@ -138,17 +191,21 @@ export default function Home() {
                   </motion.div>
                 </motion.div>
               </motion.div>
-              <motion.img
-                src="/placeholder.svg?height=550&width=800"
-                width={550}
-                height={550}
-                alt="Hero Image"
-                className="mx-auto aspect-video overflow-hidden rounded-xl object-cover sm:w-full lg:order-last"
+              <motion.div
+                className="mx-auto aspect-video overflow-hidden rounded-xl object-cover sm:w-full lg:order-last flex items-center justify-center"
                 initial={{ opacity: 0, x: 100, rotateY: -15 }}
                 animate={{ opacity: 1, x: 0, rotateY: 0 }}
                 transition={{ duration: 1, delay: 0.4 }}
                 whileHover={{ scale: 1.02, rotateY: 5 }}
-              />
+              >
+                <Image
+                  src="/trace-the-change-logo.png"
+                  width={400}
+                  height={400}
+                  alt="Trace the Change Logo"
+                  className="rounded-xl"
+                />
+              </motion.div>
             </div>
           </div>
         </section>
@@ -288,160 +345,59 @@ export default function Home() {
               transition={{ duration: 0.8, delay: 0.2 }}
               viewport={{ once: true }}
             >
-              <Tabs defaultValue="recent" className="w-full">
-                <TabsList className="grid w-full grid-cols-3">
-                  <TabsTrigger value="recent">Recent</TabsTrigger>
-                  <TabsTrigger value="largest">Largest</TabsTrigger>
-                  <TabsTrigger value="impact">Impact</TabsTrigger>
+              <Tabs defaultValue="donations" className="w-full max-w-5xl">
+                <TabsList className="grid w-full grid-cols-2">
+                  <TabsTrigger value="donations">Recent Donations</TabsTrigger>
+                  <TabsTrigger value="impact">Impact Metrics</TabsTrigger>
                 </TabsList>
-                <TabsContent value="recent" className="mt-6">
+                <TabsContent value="donations">
                   <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.5 }}>
                     <Card>
+                      <CardHeader>
+                        <CardTitle>Latest Verified Donations</CardTitle>
+                        <CardDescription>Recent contributions from our community</CardDescription>
+                      </CardHeader>
                       <CardContent className="p-0">
-                        <Table>
-                          <TableHeader>
-                            <TableRow>
-                              <TableHead>Donor</TableHead>
-                              <TableHead>Charity</TableHead>
-                              <TableHead>Amount</TableHead>
-                              <TableHead className="hidden md:table-cell">Date</TableHead>
-                              <TableHead className="text-right">Status</TableHead>
-                            </TableRow>
-                          </TableHeader>
-                          <TableBody>
-                            <TableRow>
-                              <TableCell className="font-medium">Anonymous</TableCell>
-                              <TableCell>Global Water Foundation</TableCell>
-                              <TableCell>$2,500</TableCell>
-                              <TableCell className="hidden md:table-cell">June 8, 2025</TableCell>
-                              <TableCell className="text-right">
-                                <span className="inline-flex items-center rounded-full bg-green-100 px-2.5 py-0.5 text-xs font-medium text-green-800">
-                                  Verified
-                                </span>
-                              </TableCell>
-                            </TableRow>
-                            <TableRow>
-                              <TableCell className="font-medium">Sarah Johnson</TableCell>
-                              <TableCell>Education For All</TableCell>
-                              <TableCell>$1,000</TableCell>
-                              <TableCell className="hidden md:table-cell">June 7, 2025</TableCell>
-                              <TableCell className="text-right">
-                                <span className="inline-flex items-center rounded-full bg-green-100 px-2.5 py-0.5 text-xs font-medium text-green-800">
-                                  Verified
-                                </span>
-                              </TableCell>
-                            </TableRow>
-                            <TableRow>
-                              <TableCell className="font-medium">Michael Chen</TableCell>
-                              <TableCell>Rainforest Alliance</TableCell>
-                              <TableCell>$5,000</TableCell>
-                              <TableCell className="hidden md:table-cell">June 6, 2025</TableCell>
-                              <TableCell className="text-right">
-                                <span className="inline-flex items-center rounded-full bg-green-100 px-2.5 py-0.5 text-xs font-medium text-green-800">
-                                  Verified
-                                </span>
-                              </TableCell>
-                            </TableRow>
-                            <TableRow>
-                              <TableCell className="font-medium">Emma Wilson</TableCell>
-                              <TableCell>Children's Health Fund</TableCell>
-                              <TableCell>$750</TableCell>
-                              <TableCell className="hidden md:table-cell">June 5, 2025</TableCell>
-                              <TableCell className="text-right">
-                                <span className="inline-flex items-center rounded-full bg-green-100 px-2.5 py-0.5 text-xs font-medium text-green-800">
-                                  Verified
-                                </span>
-                              </TableCell>
-                            </TableRow>
-                            <TableRow>
-                              <TableCell className="font-medium">David Rodriguez</TableCell>
-                              <TableCell>Disaster Relief Network</TableCell>
-                              <TableCell>$3,200</TableCell>
-                              <TableCell className="hidden md:table-cell">June 4, 2025</TableCell>
-                              <TableCell className="text-right">
-                                <span className="inline-flex items-center rounded-full bg-green-100 px-2.5 py-0.5 text-xs font-medium text-green-800">
-                                  Verified
-                                </span>
-                              </TableCell>
-                            </TableRow>
-                          </TableBody>
-                        </Table>
-                      </CardContent>
-                    </Card>
-                  </motion.div>
-                </TabsContent>
-                <TabsContent value="largest" className="mt-6">
-                  <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.5 }}>
-                    <Card>
-                      <CardContent className="p-0">
-                        <Table>
-                          <TableHeader>
-                            <TableRow>
-                              <TableHead>Donor</TableHead>
-                              <TableHead>Charity</TableHead>
-                              <TableHead>Amount</TableHead>
-                              <TableHead className="hidden md:table-cell">Date</TableHead>
-                              <TableHead className="text-right">Status</TableHead>
-                            </TableRow>
-                          </TableHeader>
-                          <TableBody>
-                            <TableRow>
-                              <TableCell className="font-medium">James Wilson</TableCell>
-                              <TableCell>Ocean Conservation</TableCell>
-                              <TableCell>$25,000</TableCell>
-                              <TableCell className="hidden md:table-cell">May 15, 2025</TableCell>
-                              <TableCell className="text-right">
-                                <span className="inline-flex items-center rounded-full bg-green-100 px-2.5 py-0.5 text-xs font-medium text-green-800">
-                                  Verified
-                                </span>
-                              </TableCell>
-                            </TableRow>
-                            <TableRow>
-                              <TableCell className="font-medium">Tech For Good Inc.</TableCell>
-                              <TableCell>Digital Literacy Fund</TableCell>
-                              <TableCell>$18,500</TableCell>
-                              <TableCell className="hidden md:table-cell">April 22, 2025</TableCell>
-                              <TableCell className="text-right">
-                                <span className="inline-flex items-center rounded-full bg-green-100 px-2.5 py-0.5 text-xs font-medium text-green-800">
-                                  Verified
-                                </span>
-                              </TableCell>
-                            </TableRow>
-                            <TableRow>
-                              <TableCell className="font-medium">Anonymous</TableCell>
-                              <TableCell>Hunger Relief Initiative</TableCell>
-                              <TableCell>$15,000</TableCell>
-                              <TableCell className="hidden md:table-cell">May 3, 2025</TableCell>
-                              <TableCell className="text-right">
-                                <span className="inline-flex items-center rounded-full bg-green-100 px-2.5 py-0.5 text-xs font-medium text-green-800">
-                                  Verified
-                                </span>
-                              </TableCell>
-                            </TableRow>
-                            <TableRow>
-                              <TableCell className="font-medium">Maria Garcia</TableCell>
-                              <TableCell>Women's Empowerment</TableCell>
-                              <TableCell>$12,750</TableCell>
-                              <TableCell className="hidden md:table-cell">March 18, 2025</TableCell>
-                              <TableCell className="text-right">
-                                <span className="inline-flex items-center rounded-full bg-green-100 px-2.5 py-0.5 text-xs font-medium text-green-800">
-                                  Verified
-                                </span>
-                              </TableCell>
-                            </TableRow>
-                            <TableRow>
-                              <TableCell className="font-medium">Future Foundation</TableCell>
-                              <TableCell>Climate Action Fund</TableCell>
-                              <TableCell>$10,000</TableCell>
-                              <TableCell className="hidden md:table-cell">May 28, 2025</TableCell>
-                              <TableCell className="text-right">
-                                <span className="inline-flex items-center rounded-full bg-green-100 px-2.5 py-0.5 text-xs font-medium text-green-800">
-                                  Verified
-                                </span>
-                              </TableCell>
-                            </TableRow>
-                          </TableBody>
-                        </Table>
+                        {isLoadingDonations ? (
+                          <div className="flex justify-center items-center h-48">
+                            <div className="animate-pulse text-muted-foreground">Loading donation data...</div>
+                          </div>
+                        ) : (
+                          <Table>
+                            <TableHeader>
+                              <TableRow>
+                                <TableHead>Donor</TableHead>
+                                <TableHead>Charity</TableHead>
+                                <TableHead>Amount</TableHead>
+                                <TableHead className="hidden md:table-cell">Date</TableHead>
+                                <TableHead className="text-right">Status</TableHead>
+                              </TableRow>
+                            </TableHeader>
+                            <TableBody>
+                              {recentDonations.length > 0 ? (
+                                recentDonations.map((donation) => (
+                                  <TableRow key={donation.id}>
+                                    <TableCell className="font-medium">{formatDonorName(donation)}</TableCell>
+                                    <TableCell>{getCharityName(donation.charity)}</TableCell>
+                                    <TableCell>{formatAmount(donation.amount, donation.currency)}</TableCell>
+                                    <TableCell className="hidden md:table-cell">{formatDate(donation.createdAt)}</TableCell>
+                                    <TableCell className="text-right">
+                                      <Badge 
+                                        className={donation.status === 'completed' ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'}
+                                      >
+                                        {donation.status === 'completed' ? 'Verified' : 'Pending'}
+                                      </Badge>
+                                    </TableCell>
+                                  </TableRow>
+                                ))
+                              ) : (
+                                <TableRow>
+                                  <TableCell colSpan={5} className="text-center h-24">No donations found</TableCell>
+                                </TableRow>
+                              )}
+                            </TableBody>
+                          </Table>
+                        )}
                       </CardContent>
                     </Card>
                   </motion.div>
@@ -597,12 +553,13 @@ export default function Home() {
       >
         <div className="container flex flex-col items-center justify-center gap-4 px-4 md:px-6 md:flex-row md:justify-between">
           <motion.div className="flex items-center gap-2 font-bold" whileHover={{ scale: 1.05 }}>
-            <motion.div
-              animate={{ rotate: 360 }}
-              transition={{ duration: 20, repeat: Number.POSITIVE_INFINITY, ease: "linear" }}
-            >
-              <Globe className="h-5 w-5 text-primary" />
-            </motion.div>
+            <Image
+              src="/trace-the-change-logo.png"
+              width={24}
+              height={24}
+              alt="Trace the Change Logo"
+              className="rounded-full"
+            />
             <span>Trace the Change</span>
           </motion.div>
           <p className="text-center text-sm text-muted-foreground md:text-left">

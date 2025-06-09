@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react"
 import Link from "next/link"
+import Image from "next/image"
 import { ArrowRight, Globe, Search } from "lucide-react"
 import { motion } from "framer-motion"
 
@@ -143,21 +144,19 @@ export default function Charities() {
         className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60"
       >
         <div className="container flex h-16 items-center justify-between">
-          <motion.div className="flex items-center gap-2 font-bold" whileHover={{ scale: 1.05 }}>
-            <motion.div
-              animate={{ rotate: 360 }}
-              transition={{ duration: 20, repeat: Number.POSITIVE_INFINITY, ease: "linear" }}
-            >
-              <Globe className="h-5 w-5 text-primary" />
+          <Link href="/">
+            <motion.div className="flex items-center gap-2 font-bold" whileHover={{ scale: 1.05 }}>
+              <Image
+                src="/trace-the-change-logo.png"
+                width={32}
+                height={32}
+                alt="Trace the Change Logo"
+                className="rounded-full"
+              />
+              <span>Trace the Change</span>
             </motion.div>
-            <Link href="/">Trace the Change</Link>
-          </motion.div>
+          </Link>
           <nav className="hidden md:flex gap-6">
-            <motion.div whileHover={{ scale: 1.1 }}>
-              <Link href="/" className="text-sm font-medium hover:text-primary">
-                Home
-              </Link>
-            </motion.div>
             <motion.div whileHover={{ scale: 1.1 }}>
               <Link href="/how-it-works" className="text-sm font-medium hover:text-primary">
                 How It Works
@@ -169,8 +168,8 @@ export default function Charities() {
               </Link>
             </motion.div>
             <motion.div whileHover={{ scale: 1.1 }}>
-              <Link href="/about-us" className="text-sm font-medium hover:text-primary">
-                About Us
+              <Link href="/dashboard" className="text-sm font-medium hover:text-primary">
+                Dashboard
               </Link>
             </motion.div>
           </nav>
