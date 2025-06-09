@@ -77,16 +77,6 @@ export default function Home() {
           </nav>
           <div className="flex items-center gap-4">
             <motion.div {...scaleOnHover}>
-              <Button asChild variant="outline" className="hidden md:flex">
-                <Link href="#">Log In</Link>
-              </Button>
-            </motion.div>
-            <motion.div {...scaleOnHover} className="hidden md:block">
-              <Button asChild>
-                <Link href="#">Get Started</Link>
-              </Button>
-            </motion.div>
-            <motion.div {...scaleOnHover}>
               <MetaMaskButton />
             </motion.div>
           </div>

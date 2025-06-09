@@ -34,49 +34,53 @@ const scaleOnHover = {
 
 // Default charity data in case database fetch fails
 const defaultCharityData: Record<string, any> = {
-  "global-water-foundation": {
-    name: "Global Water Foundation",
-    category: "Environment",
-    description: "Providing clean water to communities in need around the world.",
-    impact: "4.5 million people now have access to clean water",
+  "sustainability-initiative": {
+    name: "Global Climate Action Fund",
+    category: "Environmental Sustainability",
+    description: "Supporting global climate initiatives and sustainable development projects that reduce carbon emissions and promote renewable energy in underserved communities.",
+    impact: "200,000 tons of carbon emissions reduced",
     location: "Global",
     imageUrl: "/placeholder.svg?height=300&width=600",
     longDescription:
-      "The Global Water Foundation is committed to addressing the global water crisis by funding projects that provide access to clean and safe drinking water, improve sanitation facilities, and promote sustainable water management practices in underserved communities worldwide.",
+      "The Global Climate Action Fund is at the forefront of addressing climate change through innovative solutions and community-led initiatives. We partner with local organizations to implement renewable energy projects, reforestation efforts, and sustainable agriculture practices that benefit both the environment and local communities.",
     goals: [
-      "Provide clean water access to 10 million people by 2025",
-      "Implement sustainable water management systems in 500 communities",
-      "Reduce water-borne diseases by 75% in target areas",
+      "Reduce carbon emissions by 500,000 tons by 2030",
+      "Install renewable energy in 100 communities",
+      "Plant 1 million trees in deforested areas",
     ],
     wallet: "0x1234567890123456789012345678901234567890",
   },
-  "education-for-all": {
-    name: "Education For All",
-    category: "Education",
-    description: "Supporting schools and educational programs in underserved communities.",
-    impact: "15 schools supported, reaching 5,000 students",
-    location: "Southeast Asia",
+  "financial-inclusion": {
+    name: "Financial Literacy Foundation",
+    category: "Financial Inclusion",
+    description: "Empowering communities through financial education and micro-lending programs to promote economic mobility and financial inclusion for underrepresented groups.",
+    impact: "50,000 individuals trained in financial literacy",
+    location: "Multiple Countries",
     imageUrl: "/placeholder.svg?height=300&width=600",
     longDescription:
-      "Education For All believes that every child deserves access to quality education. We work with local communities to build schools, train teachers, and provide educational materials to ensure children have the tools they need to succeed.",
-    goals: ["Support 25 schools by 2026", "Train 200 teachers", "Provide educational materials to 10,000 students"],
-    wallet: "0x3456789012345678901234567890123456789012",
-  },
-  "childrens-health-fund": {
-    name: "Children's Health Fund",
-    category: "Health",
-    description: "Providing medical care and health services to children in need.",
-    impact: "30,000 children received medical care",
-    location: "Global",
-    imageUrl: "/placeholder.svg?height=300&width=600",
-    longDescription:
-      "The Children's Health Fund is dedicated to ensuring that all children have access to quality healthcare, regardless of their economic circumstances. We operate mobile health clinics and partner with local healthcare providers to deliver essential medical services.",
+      "The Financial Literacy Foundation works to bridge the knowledge gap in personal finance and economic empowerment. Through education programs, micro-financing initiatives, and mentorship, we help individuals gain the skills and resources needed to achieve financial independence and build generational wealth in underserved communities.",
     goals: [
-      "Reach 50,000 children with medical care",
-      "Establish 10 new mobile clinics",
-      "Train 100 local healthcare workers",
+      "Reach 100,000 people with financial education",
+      "Distribute 5,000 micro-loans to women entrepreneurs",
+      "Launch digital financial literacy platform in 20 languages"
     ],
     wallet: "0x2345678901234567890123456789012345678901",
+  },
+  "community-development": {
+    name: "Urban Opportunity Alliance",
+    category: "Community Development",
+    description: "Revitalizing urban areas through affordable housing initiatives, small business development, and community infrastructure improvement projects.",
+    impact: "25 urban neighborhoods revitalized",
+    location: "Urban Centers",
+    imageUrl: "/placeholder.svg?height=300&width=600",
+    longDescription:
+      "The Urban Opportunity Alliance is dedicated to transforming underserved urban areas into thriving, sustainable communities. We focus on comprehensive development approaches that include affordable housing, small business support, workforce development, and public space improvements to create equitable opportunities for all residents.",
+    goals: [
+      "Develop 1,000 units of affordable housing",
+      "Support 500 small businesses in urban cores",
+      "Create 20 community centers in underserved neighborhoods"
+    ],
+    wallet: "0x3456789012345678901234567890123456789012",
   },
 }
 
@@ -138,7 +142,7 @@ export default function DonatePage({ params }: { params: { charity: string } }) 
   
   const charity = (charityData && charityData[charityId]) || 
                   defaultCharityData[charityId] || 
-                  defaultCharityData["global-water-foundation"]
+                  defaultCharityData["sustainability-initiative"]
   const predefinedAmounts = [25, 50, 100, 250, 500, 1000]
 
   // Handles change in form fields
@@ -233,7 +237,7 @@ export default function DonatePage({ params }: { params: { charity: string } }) 
       const amount = customAmount || donationAmount
 
       // Create donation record in AstraDB
-      const donationRecord = await createDonation({
+      const donationId = await createDonation({
         donor: {
           firstName: isAnonymous ? "Anonymous" : donorInfo.firstName,
           lastName: isAnonymous ? "Donor" : donorInfo.lastName,
@@ -247,6 +251,12 @@ export default function DonatePage({ params }: { params: { charity: string } }) 
         message,
         paymentMethod
       })
+      
+      // If donation creation failed, show error
+      if (!donationId) {
+        toast.error("Failed to create donation record");
+        return;
+      }
 
       // Handle payment based on method
       if (paymentMethod === 'crypto') {
@@ -265,17 +275,17 @@ export default function DonatePage({ params }: { params: { charity: string } }) 
           if (txResult.success) {
             // Update donation with transaction hash
             if (txResult.txHash) {
-              await updateDonationStatus(donationRecord.id, 'completed', txResult.txHash)
+              await updateDonationStatus(donationId, 'completed', txResult.txHash)
               setTransactionHash(txResult.txHash)
             } else {
-              await updateDonationStatus(donationRecord.id, 'completed')
+              await updateDonationStatus(donationId, 'completed')
             }
             toast.success("Thank you for your donation!", {
               description: `Your donation of $${amount} has been successfully processed.`
             })
             setSubmissionSuccess(`Your donation of $${amount} to ${charity.name} has been successfully processed. Your transaction has been recorded on the blockchain.`);
           } else {
-            await updateDonationStatus(donationRecord.id, 'failed')
+            await updateDonationStatus(donationId, 'failed')
             toast.error("Transaction failed", {
               description: txResult.error || "Please try again."
             })
@@ -286,7 +296,7 @@ export default function DonatePage({ params }: { params: { charity: string } }) 
         }
       } else {
         // For other payment methods (simulated success)
-        await updateDonationStatus(donationRecord.id, 'completed', 'mock-transaction-' + Date.now())
+        await updateDonationStatus(donationId, 'completed', 'mock-transaction-' + Date.now())
         toast.success("Thank you for your donation!", {
           description: `Your donation of $${amount} has been successfully processed.`
         })
@@ -406,14 +416,7 @@ export default function DonatePage({ params }: { params: { charity: string } }) 
           </nav>
           <div className="flex items-center gap-4">
             <motion.div {...scaleOnHover}>
-              <Button asChild variant="outline" className="hidden md:flex">
-                <Link href="#">Log In</Link>
-              </Button>
-            </motion.div>
-            <motion.div {...scaleOnHover}>
-              <Button asChild>
-                <Link href="#">Get Started</Link>
-              </Button>
+              <MetaMaskButton />
             </motion.div>
           </div>
         </div>
@@ -442,16 +445,23 @@ export default function DonatePage({ params }: { params: { charity: string } }) 
                   <p className="mt-2 text-muted-foreground">{charity.description}</p>
                 </div>
 
-                <motion.img
-                  src={charity.imageUrl}
-                  alt={charity.name}
-                  width={600}
-                  height={300}
-                  className="mx-auto aspect-[2/1] overflow-hidden rounded-xl object-cover"
-                  initial={{ opacity: 0, scale: 0.9 }}
-                  animate={{ opacity: 1, scale: 1 }}
-                  transition={{ duration: 0.5, delay: 0.2 }}
-                />
+                <motion.div className="mx-auto aspect-[3/2] w-full max-w-[600px] overflow-hidden rounded-xl">
+                  <img
+                    src={charity.imageUrl}
+                    alt={charity.name}
+                    width={600}
+                    height={400}
+                    className="h-full w-full object-contain"
+                    onError={(e) => {
+                      const target = e.target as HTMLImageElement;
+                      target.onerror = null;
+                      target.src = "/placeholder.svg?height=400&width=600";
+                    }}
+                    style={{
+                      maxHeight: "400px"
+                    }}
+                  />
+                </motion.div>
 
                 <div className="space-y-4">
                   <h2 className="text-2xl font-bold">About {charity.name}</h2>
@@ -630,10 +640,10 @@ export default function DonatePage({ params }: { params: { charity: string } }) 
                             <SelectValue placeholder="Select payment method" />
                           </SelectTrigger>
                           <SelectContent>
+                            <SelectItem value="crypto">Cryptocurrency (MetaMask)</SelectItem>
                             <SelectItem value="credit-card">Credit Card</SelectItem>
                             <SelectItem value="debit-card">Debit Card</SelectItem>
                             <SelectItem value="bank-transfer">Bank Transfer</SelectItem>
-                            <SelectItem value="crypto">Cryptocurrency (MetaMask)</SelectItem>
                           </SelectContent>
                         </Select>
                       </div>

@@ -6,6 +6,7 @@ import { motion } from "framer-motion"
 
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import { MetaMaskButton } from "@/components/MetaMaskButton"
 
 const fadeInUp = {
   initial: { opacity: 0, y: 60 },
@@ -61,11 +62,8 @@ export default function HowItWorks() {
             </Link>
           </nav>
           <div className="flex items-center gap-4">
-            <Button asChild variant="outline" className="hidden md:flex" {...scaleOnHover}>
-              <Link href="#">Log In</Link>
-            </Button>
             <Button asChild {...scaleOnHover}>
-              <Link href="#">Get Started</Link>
+              <MetaMaskButton />
             </Button>
           </div>
         </div>

@@ -20,6 +20,7 @@ import {
 
 import { useMetaMask } from "@/hooks/useMetaMask"
 import { Donation, getDonationsByDonorEmail } from "@/lib/astradb"
+import { MetaMaskButton } from "@/components/MetaMaskButton"
 
 const fadeInUp = {
   initial: { opacity: 0, y: 60 },
@@ -135,7 +136,11 @@ export default function DashboardPage() {
               </Link>
             </motion.div>
           </nav>
-          <div className="flex items-center gap-4"></div>
+          <div className="flex items-center gap-4">
+            <motion.div {...scaleOnHover}>
+              <MetaMaskButton />
+            </motion.div>
+          </div>
         </div>
       </motion.header>
       <main className="flex-1">
