@@ -73,14 +73,13 @@ export default function DashboardPage() {
   }
 
   // Format date string
-  const formatDate = (dateString?: string | Date) => {
-    if (!dateString) return "N/A";
-    const date = new Date(dateString);
+  const formatDate = (dateString: string) => {
+    const date = new Date(dateString)
     return date.toLocaleDateString('en-US', {
       year: 'numeric',
       month: 'short',
       day: 'numeric'
-    });
+    })
   }
   
   // Format amount with currency
@@ -202,7 +201,7 @@ export default function DashboardPage() {
                         <TableBody>
                           {donations.map((donation) => (
                             <TableRow key={donation.id}>
-                              <TableCell className="font-medium">{formatDate(donation.createdAt || donation.timestamp)}</TableCell>
+                              <TableCell className="font-medium">{formatDate(donation.createdAt)}</TableCell>
                               <TableCell>
                                 <div className="flex flex-col">
                                   {charities[donation.charity]?.name || 'Unknown Charity'}
@@ -236,7 +235,7 @@ export default function DashboardPage() {
                                     donation.status === 'pending' ? 'outline' : 'destructive'
                                   }
                                 >
-                                  {donation.status ? donation.status.charAt(0).toUpperCase() + donation.status.slice(1) : 'Pending'}
+                                  {donation.status.charAt(0).toUpperCase() + donation.status.slice(1)}
                                 </Badge>
                               </TableCell>
                             </TableRow>
@@ -296,7 +295,17 @@ export default function DashboardPage() {
           </p>
           <div className="flex gap-4">
             <motion.div whileHover={{ scale: 1.1 }}>
-              <Link href="/about-us" className="text-sm text-muted-foreground hover:text-foreground">
+              <Link href="#" className="text-sm text-muted-foreground hover:text-foreground">
+                Privacy Policy
+              </Link>
+            </motion.div>
+            <motion.div whileHover={{ scale: 1.1 }}>
+              <Link href="#" className="text-sm text-muted-foreground hover:text-foreground">
+                Terms of Service
+              </Link>
+            </motion.div>
+            <motion.div whileHover={{ scale: 1.1 }}>
+              <Link href="#" className="text-sm text-muted-foreground hover:text-foreground">
                 Contact
               </Link>
             </motion.div>

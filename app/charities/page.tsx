@@ -1,5 +1,6 @@
 "use client"
 
+import { useEffect, useState } from "react"
 import Link from "next/link"
 import { ArrowRight, Globe, Search } from "lucide-react"
 import { motion } from "framer-motion"
@@ -9,7 +10,10 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Input } from "@/components/ui/input"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Badge } from "@/components/ui/badge"
+import { MetaMaskButton } from "@/components/MetaMaskButton"
+import astraService, { Charity } from "@/lib/astradb"
 
+// Animation effects
 const fadeInUp = {
   initial: { opacity: 0, y: 60 },
   animate: { opacity: 1, y: 0 },
@@ -29,7 +33,97 @@ const scaleOnHover = {
   whileTap: { scale: 0.95 },
 }
 
+// Hardcoded charities in case AstraDB is not available
+const fallbackCharities: Charity[] = [
+  {
+    id: "global-water-foundation",
+    name: "Global Water Foundation",
+    category: "Environment",
+    description: "Provides clean water access to communities in need around the world.",
+    impact: "1,500,000 people provided with clean water access",
+    location: "Global",
+    imageUrl: "/images/charities/global-water-foundation.jpg",
+    longDescription: "The Global Water Foundation is dedicated to ensuring that every community has access to clean, safe water. We work with local partners to build sustainable water infrastructure, educate communities on water conservation and sanitation practices, and advocate for water as a basic human right. Our projects include well construction, rainwater harvesting systems, and water purification technologies.",
+    goals: [
+      "Provide clean water to 5 million people by 2030",
+      "Implement water sanitation programs in 1000 communities",
+      "Create sustainable water management systems in water-stressed regions"
+    ],
+    wallet: "0xA1B2c3D4e5F6g7H8i9J0k1L2m3N4o5P6q7R8s9"
+  },
+  {
+    id: "education-for-all",
+    name: "Education For All",
+    category: "Education",
+    description: "Supports schools and educational programs in underserved communities.",
+    impact: "250,000 children gained access to quality education",
+    location: "Multiple Countries",
+    imageUrl: "/images/charities/education-for-all.jpg",
+    longDescription: "Education For All believes that every child deserves access to quality education regardless of their background or circumstances. We partner with local schools and communities to improve educational infrastructure, provide learning materials, train teachers, and offer scholarships to students in need. Our holistic approach addresses the various barriers to education, from physical access to quality of teaching.",
+    goals: [
+      "Build or renovate 500 schools in underserved areas",
+      "Provide educational materials to 1 million students",
+      "Train 10,000 teachers in modern teaching methods"
+    ],
+    wallet: "0xB2C3d4E5f6G7h8I9j0K1l2M3n4O5p6Q7r8S9"
+  },
+  {
+    id: "childrens-health-fund",
+    name: "Children's Health Fund",
+    category: "Health",
+    description: "Provides medical care and health services to children in need.",
+    impact: "500,000 children received essential healthcare",
+    location: "Global",
+    imageUrl: "/images/charities/childrens-health-fund.jpg",
+    longDescription: "The Children's Health Fund is committed to ensuring that every child has access to comprehensive healthcare services. We operate mobile medical clinics, support pediatric facilities in underserved areas, provide vaccinations and preventive care, and offer specialized treatments for children with chronic conditions. Our team of dedicated healthcare professionals works tirelessly to improve children's health outcomes worldwide.",
+    goals: [
+      "Provide healthcare access to 1 million children by 2030",
+      "Deploy 50 mobile medical clinics in remote areas",
+      "Conduct health screenings and vaccinations for 2 million children"
+    ],
+    wallet: "0xC3D4e5F6g7H8i9J0k1L2m3N4o5P6q7R8s9T0"
+  }
+];
+
 export default function Charities() {
+  const [charities, setCharities] = useState<Charity[]>(fallbackCharities);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [searchTerm, setSearchTerm] = useState("");
+
+  useEffect(() => {
+    async function loadCharities() {
+      try {
+        const data = await astraService.getAllCharities();
+        // Only use AstraDB data if we got results back
+        if (data && data.length > 0) {
+          setCharities(data);
+        }
+      } catch (err) {
+        console.error("Error fetching charities from AstraDB:", err);
+        setError("Failed to fetch charities from database. Using fallback data.");
+        // Keep using fallback data
+      } finally {
+        setLoading(false);
+      }
+    }
+
+    loadCharities();
+  }, []);
+
+  // Filter charities based on search term
+  const filteredCharities = charities.filter(
+    charity => 
+      charity.name.toLowerCase().includes(searchTerm.toLowerCase()) || 
+      charity.description.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      charity.category.toLowerCase().includes(searchTerm.toLowerCase())
+  );
+
+  // Group charities by category
+  const environmentCharities = filteredCharities.filter(charity => charity.category === "Environment");
+  const educationCharities = filteredCharities.filter(charity => charity.category === "Education");
+  const healthCharities = filteredCharities.filter(charity => charity.category === "Health");
+
   return (
     <div className="flex min-h-screen flex-col">
       <motion.header
@@ -72,14 +166,7 @@ export default function Charities() {
           </nav>
           <div className="flex items-center gap-4">
             <motion.div {...scaleOnHover}>
-              <Button asChild variant="outline" className="hidden md:flex">
-                <Link href="#">Log In</Link>
-              </Button>
-            </motion.div>
-            <motion.div {...scaleOnHover}>
-              <Button asChild>
-                <Link href="#">Get Started</Link>
-              </Button>
+              <MetaMaskButton />
             </motion.div>
           </div>
         </div>
@@ -124,9 +211,20 @@ export default function Charities() {
                     type="search"
                     placeholder="Search charities..."
                     className="w-full appearance-none bg-background pl-8 shadow-none"
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
                   />
                 </div>
               </motion.div>
+              {error && (
+                <motion.div 
+                  className="bg-yellow-100 border-l-4 border-yellow-500 text-yellow-700 p-4 mt-4" 
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                >
+                  <p>{error}</p>
+                </motion.div>
+              )}
             </motion.div>
           </div>
         </section>
@@ -142,112 +240,36 @@ export default function Charities() {
                   <TabsTrigger value="health">Health</TabsTrigger>
                 </TabsList>
                 <TabsContent value="all" className="mt-6">
-                  <motion.div
-                    className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3"
-                    variants={staggerContainer}
-                    initial="initial"
-                    animate="animate"
-                  >
-                    <motion.div variants={fadeInUp}>
-                      <CharityCard
-                        name="Global Water Foundation"
-                        category="Environment"
-                        description="Providing clean water access to communities in need around the world."
-                        impact="50 wells built serving over 25,000 people"
-                        location="East Africa"
-                        imageUrl="/placeholder.svg?height=200&width=300"
-                        slug="global-water-foundation"
-                      />
+                  {loading ? (
+                    <div className="flex justify-center items-center py-20">
+                      <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary"></div>
+                    </div>
+                  ) : filteredCharities.length > 0 ? (
+                    <motion.div
+                      className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3"
+                      variants={staggerContainer}
+                      initial="initial"
+                      animate="animate"
+                    >
+                      {filteredCharities.map((charity) => (
+                        <motion.div key={charity.id} variants={fadeInUp}>
+                          <CharityCard
+                            name={charity.name}
+                            category={charity.category}
+                            description={charity.description}
+                            impact={charity.impact}
+                            location={charity.location}
+                            imageUrl={charity.imageUrl}
+                            slug={charity.id}
+                          />
+                        </motion.div>
+                      ))}
                     </motion.div>
-                    <motion.div variants={fadeInUp}>
-                      <CharityCard
-                        name="Education For All"
-                        category="Education"
-                        description="Supporting schools and educational programs in underserved communities."
-                        impact="15 schools supported, reaching 5,000 students"
-                        location="Southeast Asia"
-                        imageUrl="/placeholder.svg?height=200&width=300"
-                        slug="education-for-all"
-                      />
-                    </motion.div>
-                    <motion.div variants={fadeInUp}>
-                      <CharityCard
-                        name="Children's Health Fund"
-                        category="Health"
-                        description="Providing medical care and health services to children in need."
-                        impact="30,000 children received medical care"
-                        location="Global"
-                        imageUrl="/placeholder.svg?height=200&width=300"
-                        slug="childrens-health-fund"
-                      />
-                    </motion.div>
-                    <motion.div variants={fadeInUp}>
-                      <CharityCard
-                        name="Rainforest Alliance"
-                        category="Environment"
-                        description="Protecting rainforests and supporting sustainable forestry practices."
-                        impact="25,000 acres of rainforest protected"
-                        location="Amazon Basin"
-                        imageUrl="/placeholder.svg?height=200&width=300"
-                        slug="rainforest-alliance"
-                      />
-                    </motion.div>
-                    <motion.div variants={fadeInUp}>
-                      <CharityCard
-                        name="Digital Literacy Fund"
-                        category="Education"
-                        description="Bridging the digital divide by providing technology education and resources."
-                        impact="10,000 students trained in digital skills"
-                        location="Multiple Regions"
-                        imageUrl="/placeholder.svg?height=200&width=300"
-                        slug="digital-literacy-fund"
-                      />
-                    </motion.div>
-                    <motion.div variants={fadeInUp}>
-                      <CharityCard
-                        name="Disaster Relief Network"
-                        category="Health"
-                        description="Providing immediate aid and long-term support to communities affected by disasters."
-                        impact="Responded to 15 major disasters in the past year"
-                        location="Global"
-                        imageUrl="/placeholder.svg?height=200&width=300"
-                        slug="disaster-relief-network"
-                      />
-                    </motion.div>
-                    <motion.div variants={fadeInUp}>
-                      <CharityCard
-                        name="Ocean Conservation"
-                        category="Environment"
-                        description="Working to protect marine ecosystems and reduce ocean pollution."
-                        impact="Removed 500,000 pounds of plastic from oceans"
-                        location="Coastal Regions"
-                        imageUrl="/placeholder.svg?height=200&width=300"
-                        slug="ocean-conservation"
-                      />
-                    </motion.div>
-                    <motion.div variants={fadeInUp}>
-                      <CharityCard
-                        name="Women's Empowerment"
-                        category="Education"
-                        description="Supporting women's education, entrepreneurship, and leadership."
-                        impact="Supported 5,000 women entrepreneurs"
-                        location="Global"
-                        imageUrl="/placeholder.svg?height=200&width=300"
-                        slug="womens-empowerment"
-                      />
-                    </motion.div>
-                    <motion.div variants={fadeInUp}>
-                      <CharityCard
-                        name="Hunger Relief Initiative"
-                        category="Health"
-                        description="Fighting hunger through food distribution and sustainable agriculture programs."
-                        impact="100,000 meals served to those in need"
-                        location="Multiple Regions"
-                        imageUrl="/placeholder.svg?height=200&width=300"
-                        slug="hunger-relief-initiative"
-                      />
-                    </motion.div>
-                  </motion.div>
+                  ) : (
+                    <div className="text-center py-20">
+                      <p className="text-muted-foreground">No charities found matching your search.</p>
+                    </div>
+                  )}
                 </TabsContent>
                 <TabsContent value="environment" className="mt-6">
                   <motion.div
@@ -256,39 +278,19 @@ export default function Charities() {
                     initial="initial"
                     animate="animate"
                   >
-                    <motion.div variants={fadeInUp}>
-                      <CharityCard
-                        name="Global Water Foundation"
-                        category="Environment"
-                        description="Providing clean water access to communities in need around the world."
-                        impact="50 wells built serving over 25,000 people"
-                        location="East Africa"
-                        imageUrl="/placeholder.svg?height=200&width=300"
-                        slug="global-water-foundation"
-                      />
-                    </motion.div>
-                    <motion.div variants={fadeInUp}>
-                      <CharityCard
-                        name="Rainforest Alliance"
-                        category="Environment"
-                        description="Protecting rainforests and supporting sustainable forestry practices."
-                        impact="25,000 acres of rainforest protected"
-                        location="Amazon Basin"
-                        imageUrl="/placeholder.svg?height=200&width=300"
-                        slug="rainforest-alliance"
-                      />
-                    </motion.div>
-                    <motion.div variants={fadeInUp}>
-                      <CharityCard
-                        name="Ocean Conservation"
-                        category="Environment"
-                        description="Working to protect marine ecosystems and reduce ocean pollution."
-                        impact="Removed 500,000 pounds of plastic from oceans"
-                        location="Coastal Regions"
-                        imageUrl="/placeholder.svg?height=200&width=300"
-                        slug="ocean-conservation"
-                      />
-                    </motion.div>
+                    {environmentCharities.map((charity) => (
+                      <motion.div key={charity.id} variants={fadeInUp}>
+                        <CharityCard
+                          name={charity.name}
+                          category={charity.category}
+                          description={charity.description}
+                          impact={charity.impact}
+                          location={charity.location}
+                          imageUrl={charity.imageUrl}
+                          slug={charity.id}
+                        />
+                      </motion.div>
+                    ))}
                   </motion.div>
                 </TabsContent>
                 <TabsContent value="education" className="mt-6">
@@ -298,39 +300,19 @@ export default function Charities() {
                     initial="initial"
                     animate="animate"
                   >
-                    <motion.div variants={fadeInUp}>
-                      <CharityCard
-                        name="Education For All"
-                        category="Education"
-                        description="Supporting schools and educational programs in underserved communities."
-                        impact="15 schools supported, reaching 5,000 students"
-                        location="Southeast Asia"
-                        imageUrl="/placeholder.svg?height=200&width=300"
-                        slug="education-for-all"
-                      />
-                    </motion.div>
-                    <motion.div variants={fadeInUp}>
-                      <CharityCard
-                        name="Digital Literacy Fund"
-                        category="Education"
-                        description="Bridging the digital divide by providing technology education and resources."
-                        impact="10,000 students trained in digital skills"
-                        location="Multiple Regions"
-                        imageUrl="/placeholder.svg?height=200&width=300"
-                        slug="digital-literacy-fund"
-                      />
-                    </motion.div>
-                    <motion.div variants={fadeInUp}>
-                      <CharityCard
-                        name="Women's Empowerment"
-                        category="Education"
-                        description="Supporting women's education, entrepreneurship, and leadership."
-                        impact="Supported 5,000 women entrepreneurs"
-                        location="Global"
-                        imageUrl="/placeholder.svg?height=200&width=300"
-                        slug="womens-empowerment"
-                      />
-                    </motion.div>
+                    {educationCharities.map((charity) => (
+                      <motion.div key={charity.id} variants={fadeInUp}>
+                        <CharityCard
+                          name={charity.name}
+                          category={charity.category}
+                          description={charity.description}
+                          impact={charity.impact}
+                          location={charity.location}
+                          imageUrl={charity.imageUrl}
+                          slug={charity.id}
+                        />
+                      </motion.div>
+                    ))}
                   </motion.div>
                 </TabsContent>
                 <TabsContent value="health" className="mt-6">
@@ -340,39 +322,19 @@ export default function Charities() {
                     initial="initial"
                     animate="animate"
                   >
-                    <motion.div variants={fadeInUp}>
-                      <CharityCard
-                        name="Children's Health Fund"
-                        category="Health"
-                        description="Providing medical care and health services to children in need."
-                        impact="30,000 children received medical care"
-                        location="Global"
-                        imageUrl="/placeholder.svg?height=200&width=300"
-                        slug="childrens-health-fund"
-                      />
-                    </motion.div>
-                    <motion.div variants={fadeInUp}>
-                      <CharityCard
-                        name="Disaster Relief Network"
-                        category="Health"
-                        description="Providing immediate aid and long-term support to communities affected by disasters."
-                        impact="Responded to 15 major disasters in the past year"
-                        location="Global"
-                        imageUrl="/placeholder.svg?height=200&width=300"
-                        slug="disaster-relief-network"
-                      />
-                    </motion.div>
-                    <motion.div variants={fadeInUp}>
-                      <CharityCard
-                        name="Hunger Relief Initiative"
-                        category="Health"
-                        description="Fighting hunger through food distribution and sustainable agriculture programs."
-                        impact="100,000 meals served to those in need"
-                        location="Multiple Regions"
-                        imageUrl="/placeholder.svg?height=200&width=300"
-                        slug="hunger-relief-initiative"
-                      />
-                    </motion.div>
+                    {healthCharities.map((charity) => (
+                      <motion.div key={charity.id} variants={fadeInUp}>
+                        <CharityCard
+                          name={charity.name}
+                          category={charity.category}
+                          description={charity.description}
+                          impact={charity.impact}
+                          location={charity.location}
+                          imageUrl={charity.imageUrl}
+                          slug={charity.id}
+                        />
+                      </motion.div>
+                    ))}
                   </motion.div>
                 </TabsContent>
               </Tabs>
@@ -472,45 +434,51 @@ interface CharityCardProps {
 
 function CharityCard({ name, category, description, impact, location, imageUrl, slug }: CharityCardProps) {
   return (
-    <motion.div whileHover={{ y: -5, scale: 1.02 }} transition={{ duration: 0.3 }}>
-      <Card className="overflow-hidden h-full hover:shadow-xl transition-shadow duration-300">
-        <motion.img
-          src={imageUrl || "/placeholder.svg"}
+    <Card className="overflow-hidden hover:shadow-lg transition-shadow duration-300 h-full flex flex-col">
+      <div className="aspect-[4/3] overflow-hidden">
+        <img
+          src={imageUrl.startsWith('/images') ? imageUrl : `/images/charities/${slug}.jpg`}
           alt={name}
-          className="w-full h-48 object-cover"
-          whileHover={{ scale: 1.05 }}
-          transition={{ duration: 0.3 }}
+          width={300}
+          height={200}
+          className="object-contain w-full h-full transition-transform duration-300 hover:scale-105"
+          onError={(e) => {
+            const target = e.target as HTMLImageElement;
+            target.onerror = null;
+            target.src = "/placeholder.svg?height=200&width=300";
+          }}
         />
-        <CardHeader className="p-4">
-          <div className="flex justify-between items-start">
-            <CardTitle className="text-xl">{name}</CardTitle>
-            <motion.div whileHover={{ scale: 1.1 }} transition={{ duration: 0.2 }}>
-              <Badge variant="outline">{category}</Badge>
-            </motion.div>
-          </div>
-          <CardDescription className="line-clamp-2">{description}</CardDescription>
-        </CardHeader>
-        <CardContent className="p-4 pt-0 space-y-2">
+      </div>
+      <CardHeader className="pb-2">
+        <div className="flex justify-between items-start">
+          <CardTitle className="text-xl">{name}</CardTitle>
+          <Badge variant="outline" className="ml-2">
+            {category}
+          </Badge>
+        </div>
+      </CardHeader>
+      <CardContent className="py-2 flex-grow">
+        <CardDescription className="text-sm text-muted-foreground mb-4">{description}</CardDescription>
+        <div className="grid gap-2 text-sm">
           <div className="flex items-start gap-2">
-            <span className="font-medium text-sm">Impact:</span>
-            <span className="text-sm text-muted-foreground">{impact}</span>
+            <span className="font-semibold">Impact:</span>
+            <span className="text-muted-foreground">{impact}</span>
           </div>
           <div className="flex items-start gap-2">
-            <span className="font-medium text-sm">Location:</span>
-            <span className="text-sm text-muted-foreground">{location}</span>
+            <span className="font-semibold">Location:</span>
+            <span className="text-muted-foreground">{location}</span>
           </div>
-        </CardContent>
-        <CardFooter className="p-4 pt-0">
-          <motion.div className="w-full" {...scaleOnHover}>
-            <Button asChild className="w-full" variant="outline">
-              <Link href={`/donate/${slug}`}>
-                Donate Now
-                <ArrowRight className="ml-2 h-4 w-4" />
-              </Link>
-            </Button>
-          </motion.div>
-        </CardFooter>
-      </Card>
-    </motion.div>
+        </div>
+      </CardContent>
+      <CardFooter className="pt-2">
+        <motion.div {...scaleOnHover} className="w-full">
+          <Button asChild className="w-full">
+            <Link href={`/donate/${slug}`}>
+              Donate Now <ArrowRight className="ml-2 h-4 w-4" />
+            </Link>
+          </Button>
+        </motion.div>
+      </CardFooter>
+    </Card>
   )
 }
