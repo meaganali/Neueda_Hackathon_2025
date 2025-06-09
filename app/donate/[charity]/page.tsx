@@ -93,8 +93,7 @@ export default function DonatePage({ params }: { params: { charity: string } }) 
   const [donorInfo, setDonorInfo] = useState({
     firstName: "",
     lastName: "",
-    email: "",
-    phone: "",
+    email: ""
   })
   const [message, setMessage] = useState("")
   const [isSubmitting, setIsSubmitting] = useState(false)
@@ -242,7 +241,6 @@ export default function DonatePage({ params }: { params: { charity: string } }) 
           firstName: isAnonymous ? "Anonymous" : donorInfo.firstName,
           lastName: isAnonymous ? "Donor" : donorInfo.lastName,
           email: donorInfo.email,
-          phone: donorInfo.phone,
           isAnonymous
         },
         charity: charityId,
@@ -603,17 +601,6 @@ export default function DonatePage({ params }: { params: { charity: string } }) 
                           type="email" 
                           placeholder="john@example.com" 
                           value={donorInfo.email}
-                          onChange={handleInputChange}
-                        />
-                      </div>
-
-                      <div className="space-y-2">
-                        <Label htmlFor="phone">Phone (Optional)</Label>
-                        <Input 
-                          id="phone" 
-                          type="tel" 
-                          placeholder="+1 (555) 123-4567" 
-                          value={donorInfo.phone}
                           onChange={handleInputChange}
                         />
                       </div>
