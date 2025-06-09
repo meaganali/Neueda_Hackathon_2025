@@ -38,6 +38,10 @@ const charities: Record<string, any> = {
     name: "Global Water Foundation",
     category: "Environment"
   },
+  "education-for-all": {
+    name: "Education For All",
+    category: "Education"
+  },
   "childrens-health-fund": {
     name: "Children's Health Fund",
     category: "Health"

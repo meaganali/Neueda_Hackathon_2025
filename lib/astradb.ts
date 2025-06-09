@@ -63,9 +63,9 @@ const defaultCharities: Charity[] = [
     id: "global-water-foundation",
     name: "Global Water Foundation",
     category: "Environment",
-    description: "Provides clean water access to communities in need around the world.",
-    impact: "1,500,000 people provided with clean water access",
-    location: "Global",
+    description: "Providing clean water access to communities in need around the world.",
+    impact: "50 wells built serving over 25,000 people",
+    location: "East Africa",
     imageUrl: "/images/charities/global-water-foundation.jpg",
     longDescription: "The Global Water Foundation is dedicated to ensuring that every community has access to clean, safe water. We work with local partners to build sustainable water infrastructure, educate communities on water conservation and sanitation practices, and advocate for water as a basic human right. Our projects include well construction, rainwater harvesting systems, and water purification technologies.",
     goals: [
@@ -79,9 +79,9 @@ const defaultCharities: Charity[] = [
     id: "education-for-all",
     name: "Education For All",
     category: "Education",
-    description: "Supports schools and educational programs in underserved communities.",
-    impact: "250,000 children gained access to quality education",
-    location: "Multiple Countries",
+    description: "Supporting schools and educational programs in underserved communities.",
+    impact: "15 schools supported, reaching 5,000 students",
+    location: "Southeast Asia",
     imageUrl: "/images/charities/education-for-all.jpg",
     longDescription: "Education For All believes that every child deserves access to quality education regardless of their background or circumstances. We partner with local schools and communities to improve educational infrastructure, provide learning materials, train teachers, and offer scholarships to students in need. Our holistic approach addresses the various barriers to education, from physical access to quality of teaching.",
     goals: [
@@ -96,7 +96,7 @@ const defaultCharities: Charity[] = [
     name: "Children's Health Fund",
     category: "Health",
     description: "Provides medical care and health services to children in need.",
-    impact: "500,000 children received essential healthcare",
+    impact: "30,000 children received medical care",
     location: "Global",
     imageUrl: "/images/charities/childrens-health-fund.jpg",
     longDescription: "The Children's Health Fund is committed to ensuring that every child has access to comprehensive healthcare services. We operate mobile medical clinics, support pediatric facilities in underserved areas, provide vaccinations and preventive care, and offer specialized treatments for children with chronic conditions. Our team of dedicated healthcare professionals works tirelessly to improve children's health outcomes worldwide.",
@@ -143,24 +143,44 @@ export async function getDonationsByDonorEmail(email: string): Promise<Donation[
   // If using mock data, return mock donations
   if (!isUsingRealDb) {
     // Generate some sample donations for the demo
+    const currentTime = new Date();
     return [
+      {
+        id: "mock-donation-" + Date.now(),
+        donor: {
+          firstName: "Anonymous",
+          lastName: "Donor",
+          email: email,
+          phone: "",
+          isAnonymous: true
+        },
+        charity: "global-water-foundation",
+        amount: 5,
+        currency: "USD",
+        timestamp: currentTime,
+        status: "completed",
+        transactionHash: "0xfdd4df6b64ef7d24619ea0e7bd304938e9bf56f9a31c7e8eee875986e8b7f42b",
+        message: "Test 1",
+        paymentMethod: "crypto",
+        createdAt: currentTime.toISOString()
+      },
       {
         id: "mock-donation-1",
         donor: {
           firstName: "John",
           lastName: "Doe",
           email: email,
-          phone: "123-456-7890",
+          phone: "",
           isAnonymous: false
         },
         charity: "global-water-foundation",
         amount: 100,
         currency: "USD",
-        timestamp: new Date(),
+        timestamp: new Date(currentTime.getTime() - 2 * 24 * 60 * 60 * 1000),
         status: "completed",
         transactionHash: "0xabcd1234567890",
         paymentMethod: "crypto",
-        createdAt: new Date().toISOString()
+        createdAt: new Date(currentTime.getTime() - 2 * 24 * 60 * 60 * 1000).toISOString()
       },
       {
         id: "mock-donation-2",
@@ -168,16 +188,16 @@ export async function getDonationsByDonorEmail(email: string): Promise<Donation[
           firstName: "John",
           lastName: "Doe",
           email: email,
-          phone: "123-456-7890",
+          phone: "",
           isAnonymous: false
         },
         charity: "education-for-all",
         amount: 50,
         currency: "USD",
-        timestamp: new Date(),
+        timestamp: new Date(currentTime.getTime() - 5 * 24 * 60 * 60 * 1000),
         status: "completed",
         paymentMethod: "credit-card",
-        createdAt: new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString()
+        createdAt: new Date(currentTime.getTime() - 5 * 24 * 60 * 60 * 1000).toISOString()
       }
     ];
   }
