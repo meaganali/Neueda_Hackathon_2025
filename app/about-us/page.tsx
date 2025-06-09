@@ -359,23 +359,7 @@ export default function AboutUs() {
           <p className="text-center text-sm text-muted-foreground md:text-left">
             &copy; {new Date().getFullYear()} Trace the Change. All rights reserved.
           </p>
-          <div className="flex gap-4">
-            <motion.div whileHover={{ scale: 1.1 }}>
-              <Link href="#" className="text-sm text-muted-foreground hover:text-foreground">
-                Privacy Policy
-              </Link>
-            </motion.div>
-            <motion.div whileHover={{ scale: 1.1 }}>
-              <Link href="#" className="text-sm text-muted-foreground hover:text-foreground">
-                Terms of Service
-              </Link>
-            </motion.div>
-            <motion.div whileHover={{ scale: 1.1 }}>
-              <Link href="#" className="text-sm text-muted-foreground hover:text-foreground">
-                Contact
-              </Link>
-            </motion.div>
-          </div>
+          <div className="flex gap-4">{/* Footer links removed as requested */}</div>
         </div>
       </motion.footer>
     </div>
