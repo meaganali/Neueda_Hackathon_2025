@@ -609,7 +609,13 @@ export default function Home() {
           <p className="text-center text-sm text-muted-foreground md:text-left">
             &copy; {new Date().getFullYear()} Trace the Change. All rights reserved.
           </p>
-          <div className="flex gap-4">{/* Footer links removed as requested */}</div>
+          <div className="flex gap-4">
+            <motion.div whileHover={{ scale: 1.1 }}>
+              <Link href="/about-us" className="text-sm text-muted-foreground hover:text-foreground">
+                Contact
+              </Link>
+            </motion.div>
+          </div>
         </div>
       </motion.footer>
     </div>

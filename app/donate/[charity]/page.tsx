@@ -3,7 +3,7 @@
 import Link from "next/link"
 import { ArrowLeft, Globe, Heart, Shield, CreditCard } from "lucide-react"
 import { motion } from "framer-motion"
-import { useState } from "react"
+import React, { useState } from "react"
 
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
@@ -74,8 +74,11 @@ export default function DonatePage({ params }: { params: { charity: string } }) 
   const [donationAmount, setDonationAmount] = useState("")
   const [customAmount, setCustomAmount] = useState("")
   const [isAnonymous, setIsAnonymous] = useState(false)
+  const [paymentMethod, setPaymentMethod] = useState<string>('crypto')
 
-  const charity = charityData[params.charity] || charityData["global-water-foundation"]
+  // Use the charity parameter directly for now to avoid React.use() errors
+  const charitySlug = params.charity
+  const charity = charityData[charitySlug] || charityData["global-water-foundation"]
 
   const predefinedAmounts = [25, 50, 100, 250, 500, 1000]
 
@@ -159,13 +162,31 @@ export default function DonatePage({ params }: { params: { charity: string } }) 
                 animate={{ opacity: 1, x: 0 }}
                 transition={{ duration: 0.8 }}
               >
-                <motion.img
-                  src={charity.imageUrl}
-                  alt={charity.name}
-                  className="w-full h-64 object-cover rounded-xl"
-                  whileHover={{ scale: 1.02 }}
-                  transition={{ duration: 0.3 }}
-                />
+                <div>
+                  <Badge variant="outline" className="mb-2">
+                    {charity.category}
+                  </Badge>
+                  <h1 className="text-3xl font-bold tracking-tighter sm:text-5xl">{charity.name}</h1>
+                  <p className="mt-2 text-muted-foreground">{charity.description}</p>
+                </div>
+
+                <motion.div className="mx-auto aspect-[3/2] w-full max-w-[600px] overflow-hidden rounded-xl">
+                  <img
+                    src={charity.imageUrl}
+                    alt={charity.name}
+                    width={600}
+                    height={400}
+                    className="h-full w-full object-contain bg-white/5 p-2"
+                    onError={(e) => {
+                      const target = e.target as HTMLImageElement;
+                      target.onerror = null;
+                      target.src = "/placeholder.svg?height=400&width=600";
+                    }}
+                    style={{
+                      maxHeight: "400px"
+                    }}
+                  />
+                </motion.div>
 
                 <div className="space-y-4">
                   <div className="flex items-center gap-2">
@@ -337,10 +358,7 @@ export default function DonatePage({ params }: { params: { charity: string } }) 
                         <Input id="email" type="email" placeholder="john@example.com" />
                       </div>
 
-                      <div className="space-y-2">
-                        <Label htmlFor="phone">Phone (Optional)</Label>
-                        <Input id="phone" type="tel" placeholder="+1 (555) 123-4567" />
-                      </div>
+
 
                       <div className="flex items-center space-x-2">
                         <Checkbox
@@ -359,15 +377,15 @@ export default function DonatePage({ params }: { params: { charity: string } }) 
 
                       <div className="space-y-2">
                         <Label htmlFor="payment-method">Payment Method</Label>
-                        <Select>
+                        <Select value={paymentMethod} onValueChange={setPaymentMethod}>
                           <SelectTrigger>
                             <SelectValue placeholder="Select payment method" />
                           </SelectTrigger>
                           <SelectContent>
+                            <SelectItem value="crypto">Cryptocurrency</SelectItem>
                             <SelectItem value="credit-card">Credit Card</SelectItem>
                             <SelectItem value="debit-card">Debit Card</SelectItem>
                             <SelectItem value="bank-transfer">Bank Transfer</SelectItem>
-                            <SelectItem value="crypto">Cryptocurrency</SelectItem>
                           </SelectContent>
                         </Select>
                       </div>
@@ -403,15 +421,17 @@ export default function DonatePage({ params }: { params: { charity: string } }) 
                       animate={{ opacity: 1, y: 0 }}
                       transition={{ duration: 0.6, delay: 0.8 }}
                     >
-                      <div className="flex items-center gap-2 p-4 bg-primary/5 rounded-lg">
-                        <Shield className="h-5 w-5 text-primary" />
-                        <div className="text-sm">
-                          <p className="font-medium">Blockchain Verified</p>
-                          <p className="text-muted-foreground">
-                            Your donation will be tracked transparently on the blockchain
-                          </p>
+                      {paymentMethod === 'crypto' && (
+                        <div className="flex items-center gap-2 p-4 bg-primary/5 rounded-lg">
+                          <Shield className="h-5 w-5 text-primary" />
+                          <div className="text-sm">
+                            <p className="font-medium">Blockchain Verified</p>
+                            <p className="text-muted-foreground">
+                              Your donation will be tracked transparently on the blockchain
+                            </p>
+                          </div>
                         </div>
-                      </div>
+                      )}
 
                       <motion.div {...scaleOnHover}>
                         <Button className="w-full" size="lg">
@@ -420,8 +440,7 @@ export default function DonatePage({ params }: { params: { charity: string } }) 
                       </motion.div>
 
                       <p className="text-xs text-muted-foreground text-center">
-                        By donating, you agree to our Terms of Service and Privacy Policy. A 2% platform fee will be
-                        applied to cover operational costs.
+                        A 2% platform fee will be applied to cover operational costs.
                       </p>
                     </motion.div>
                   </CardContent>
@@ -453,17 +472,7 @@ export default function DonatePage({ params }: { params: { charity: string } }) 
           </p>
           <div className="flex gap-4">
             <motion.div whileHover={{ scale: 1.1 }}>
-              <Link href="#" className="text-sm text-muted-foreground hover:text-foreground">
-                Privacy Policy
-              </Link>
-            </motion.div>
-            <motion.div whileHover={{ scale: 1.1 }}>
-              <Link href="#" className="text-sm text-muted-foreground hover:text-foreground">
-                Terms of Service
-              </Link>
-            </motion.div>
-            <motion.div whileHover={{ scale: 1.1 }}>
-              <Link href="#" className="text-sm text-muted-foreground hover:text-foreground">
+              <Link href="/about-us" className="text-sm text-muted-foreground hover:text-foreground">
                 Contact
               </Link>
             </motion.div>

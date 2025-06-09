@@ -419,7 +419,7 @@ export default function Charities() {
               >
                 <motion.div {...scaleOnHover}>
                   <Button asChild className="w-full" size="lg">
-                    <Link href="#">Apply as a Charity</Link>
+                    <Link href="/charities">Apply as a Charity</Link>
                   </Button>
                 </motion.div>
               </motion.div>
@@ -449,17 +449,7 @@ export default function Charities() {
           </p>
           <div className="flex gap-4">
             <motion.div whileHover={{ scale: 1.1 }}>
-              <Link href="#" className="text-sm text-muted-foreground hover:text-foreground">
-                Privacy Policy
-              </Link>
-            </motion.div>
-            <motion.div whileHover={{ scale: 1.1 }}>
-              <Link href="#" className="text-sm text-muted-foreground hover:text-foreground">
-                Terms of Service
-              </Link>
-            </motion.div>
-            <motion.div whileHover={{ scale: 1.1 }}>
-              <Link href="#" className="text-sm text-muted-foreground hover:text-foreground">
+              <Link href="/about-us" className="text-sm text-muted-foreground hover:text-foreground">
                 Contact
               </Link>
             </motion.div>
